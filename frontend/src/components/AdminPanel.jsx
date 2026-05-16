@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Unlock, Database, UploadCloud, CheckCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
+import API_BASE from '../config';
 
 export default function AdminPanel({ inline = false }) {
   const [isAuthenticated, setIsAuthenticated] = useState(inline);
@@ -36,7 +37,7 @@ export default function AdminPanel({ inline = false }) {
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await axios.post('http://localhost:8000/api/v1/documents/upload', formData, {
+      const response = await axios.post(`${API_BASE}/api/v1/documents/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       

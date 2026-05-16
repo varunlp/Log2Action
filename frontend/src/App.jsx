@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
@@ -35,6 +36,7 @@ const AdminRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" toastOptions={{ style: { background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.9rem' } }} />
       <Router>
         <Routes>
           {/* Landing Page as the entry point */}

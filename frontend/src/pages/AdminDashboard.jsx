@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE from '../config';
 import { Users, Activity, CheckCircle, ArrowLeft, Loader2, Terminal, Database, UploadCloud, FileText, AlertCircle } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -33,9 +34,9 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     try {
       const [statsRes, usersRes, activityRes] = await Promise.all([
-        axios.get('http://localhost:8000/api/v1/admin/stats'),
-        axios.get('http://localhost:8000/api/v1/admin/users/pending'),
-        axios.get('http://localhost:8000/api/v1/admin/activity?limit=15'),
+        axios.get(`${API_BASE}/api/v1/admin/stats`),
+        axios.get(`${API_BASE}/api/v1/admin/users/pending`),
+        axios.get(`${API_BASE}/api/v1/admin/activity?limit=15`),
       ]);
       setStats(statsRes.data);
       setPendingUsers(usersRes.data);
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
   useEffect(() => { fetchAll(); }, []);
 
   const handleApprove = async (userId) => {
-    await axios.post(`http://localhost:8000/api/v1/admin/users/${userId}/approve`);
+    await axios.post(`${API_BASE}/api/v1/admin/users/${userId}/approve`);
     setPendingUsers(prev => prev.filter(u => u.id !== userId));
     fetchAll();
   };
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
     try {
       const formData = new FormData();
       formData.append('file', kbFile);
-      const res = await axios.post('http://localhost:8000/api/v1/documents/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await axios.post(`${API_BASE}/api/v1/documents/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setKbMessage(`✓ Created ${res.data.chunks_created} chunks from ${res.data.filename}`);
       setKbFile(null);
     } catch {

@@ -46,16 +46,28 @@ class MockProvider(BaseAIProvider):
             # Use the actual runbook content to build remediation
             combined_context = "\n".join(context_docs[:2])
             
-            # Extract actionable sentences from the runbook
-            context_sentences = [s.strip() for s in combined_context.replace('\n', '. ').split('. ') if len(s.strip()) > 20]
+            # Extract actionable sentences — filter out separators, short/garbage lines
+            raw_sentences = combined_context.replace('\n', '. ').split('. ')
+            context_sentences = []
+            for s in raw_sentences:
+                cleaned = s.strip().strip('=').strip('-').strip('*').strip('#').strip()
+                # Skip empty, too short, or separator-only lines
+                if len(cleaned) < 25:
+                    continue
+                if all(c in '=-_*#~' for c in cleaned):
+                    continue
+                context_sentences.append(cleaned)
             
-            # Pick relevant remediation steps from the runbook
+            # Pick up to 5 unique remediation steps from the runbook
+            seen = set()
             remediation_steps = []
-            for i, sentence in enumerate(context_sentences[:5]):
-                remediation_steps.append(f"{i+1}. {sentence}")
+            for sentence in context_sentences:
+                if sentence not in seen and len(remediation_steps) < 5:
+                    seen.add(sentence)
+                    remediation_steps.append(f"{len(remediation_steps)+1}. {sentence}")
             
             if not remediation_steps:
-                remediation_steps = [f"1. Review the uploaded runbook for guidance.", "2. Check the service configuration.", "3. Restart the affected component."]
+                remediation_steps = ["1. Review the uploaded runbook for guidance.", "2. Check the service configuration.", "3. Restart the affected component."]
 
             mock_response = {
                 "issue_summary": f"Detected {severity}-level issue in submitted log: {key_line[:120]}",
@@ -64,13 +76,13 @@ class MockProvider(BaseAIProvider):
                     f"Log analysis identified the following failure pattern:\n"
                     f"\"{key_line}\"\n\n"
                     f"Based on your internal runbook, this matches a known operational pattern. "
-                    f"The system cross-referenced {len(context_docs)} relevant document chunks from "
+                    f"The system cross-referenced {len(context_docs)} relevant document chunk(s) from "
                     f"your knowledge base to provide context-aware diagnosis."
                 ),
                 "remediation": (
                     "Based on your internal runbooks, the recommended steps are:\n\n" +
                     "\n".join(remediation_steps) +
-                    "\n\nNote: This analysis was generated using RAG-retrieved context from your uploaded documents."
+                    "\n\n(Analysis powered by RAG-retrieved context from your uploaded documents.)"
                 )
             }
         else:

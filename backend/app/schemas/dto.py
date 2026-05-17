@@ -2,6 +2,10 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+class TextAnalyzeRequest(BaseModel):
+    text: str
+
+
 class AnalysisResultSchema(BaseModel):
     issue_summary: str
     severity: str

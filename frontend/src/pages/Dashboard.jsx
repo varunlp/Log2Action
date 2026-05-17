@@ -216,6 +216,19 @@ export default function Dashboard() {
     } finally { setIsAnalyzing(false); }
   };
 
+  const handleAnalyzeText = async (text) => {
+    try {
+      setErrorMsg(null); setIsAnalyzing(true);
+      const response = await axios.post(`${API_BASE}/api/v1/logs/analyze-text`, { text });
+      setAnalysisResult(response.data);
+      toast.success('Analysis complete');
+      fetchHistory();
+    } catch (err) {
+      const msg = err.response?.data?.detail || "An error occurred during analysis.";
+      setErrorMsg(msg); toast.error(msg); setAnalysisResult(null);
+    } finally { setIsAnalyzing(false); }
+  };
+
   const handleReset = () => { setAnalysisResult(null); setErrorMsg(null); };
 
   return (
@@ -252,7 +265,7 @@ export default function Dashboard() {
 
         <AnimatePresence mode="wait">
           {!analysisResult ? (
-            <UploadZone key="upload" onUpload={handleUpload} isAnalyzing={isAnalyzing} />
+            <UploadZone key="upload" onUploadFile={handleUpload} onAnalyzeText={handleAnalyzeText} isAnalyzing={isAnalyzing} />
           ) : (
             <AnalysisResult key="result" result={analysisResult} onReset={handleReset} />
           )}

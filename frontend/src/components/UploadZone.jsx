@@ -1,18 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, FileText, Loader2 } from 'lucide-react';
+import { Paperclip, Sparkles, Loader2, X, FileText } from 'lucide-react';
 
 const LOADING_MESSAGES = [
   "Parsing log structure...",
   "Querying pgvector for runbook context...",
-  "Analyzing with Gemini AI...",
+  "Analyzing with AI...",
   "Synthesizing intelligence report..."
 ];
 
-export default function UploadZone({ onUpload, isAnalyzing }) {
-  const [isDragging, setIsDragging] = useState(false);
+export default function UploadZone({ onUploadFile, onAnalyzeText, isAnalyzing }) {
+  const [text, setText] = useState('');
   const [file, setFile] = useState(null);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
   const fileInputRef = useRef(null);
 
   React.useEffect(() => {
@@ -23,61 +24,165 @@ export default function UploadZone({ onUpload, isAnalyzing }) {
     return () => clearInterval(interval);
   }, [isAnalyzing]);
 
-  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
-  const handleDrop = (e) => {
-    e.preventDefault(); setIsDragging(false);
-    if (e.dataTransfer.files?.length) setFile(e.dataTransfer.files[0]);
+  const handleFileChange = (e) => {
+    if (e.target.files?.length) {
+      setFile(e.target.files[0]);
+    }
   };
-  const handleFileChange = (e) => { if (e.target.files?.length) setFile(e.target.files[0]); };
-  const handleProcess = () => { if (file) onUpload(file); };
+
+  const removeFile = () => {
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleProcess = () => {
+    if (isAnalyzing) return;
+    if (file) {
+      onUploadFile(file);
+    } else if (text.trim()) {
+      onAnalyzeText(text);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleProcess();
+    }
+  };
+
+  const hasInput = !!file || text.trim().length > 0;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
-      
-      <div
-        className="card"
-        onClick={() => !isAnalyzing && fileInputRef.current.click()}
-        onDragOver={isAnalyzing ? undefined : handleDragOver}
-        onDragLeave={isAnalyzing ? undefined : handleDragLeave}
-        onDrop={isAnalyzing ? undefined : handleDrop}
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', margin: '0 auto' }}>
+      <div 
         style={{
-          width: '100%', padding: '3rem 2rem', textAlign: 'center',
-          cursor: isAnalyzing ? 'default' : 'pointer',
-          borderColor: isDragging ? 'var(--accent)' : '',
-          borderStyle: isDragging ? 'dashed' : 'solid'
+          position: 'relative',
+          background: 'var(--bg-primary)',
+          border: `1px solid ${isFocused ? 'var(--accent)' : 'var(--border-subtle)'}`,
+          borderRadius: '16px',
+          boxShadow: isFocused ? '0 0 0 4px rgba(232,116,97,0.1)' : '0 4px 20px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '140px'
         }}
       >
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".log,.txt" />
-        
-        <AnimatePresence mode="wait">
-          {!file ? (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-              <UploadCloud size={40} color="var(--text-tertiary)" strokeWidth={1.5} />
-              <p style={{ fontWeight: 500, fontSize: '1rem' }}>Drop a log file here</p>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>or click to browse · .log, .txt</p>
-            </motion.div>
-          ) : (
-            <motion.div key="file" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-              <FileText size={40} color="var(--accent)" strokeWidth={1.5} />
-              <p style={{ fontWeight: 600, fontSize: '1rem' }}>{file.name}</p>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>{(file.size / 1024).toFixed(1)} KB</p>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyDown={handleKeyDown}
+          placeholder="Paste log snippets, describe your issue, or attach a file..."
+          disabled={isAnalyzing}
+          style={{
+            width: '100%',
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            padding: '1.25rem 1.25rem 3rem 1.25rem',
+            fontSize: '0.95rem',
+            lineHeight: 1.6,
+            color: 'var(--text-primary)',
+            resize: 'none',
+            outline: 'none'
+          }}
+        />
+
+        {/* Attached File Pill */}
+        <AnimatePresence>
+          {file && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                left: '1.25rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}
+            >
+              <FileText size={14} color="var(--accent)" />
+              <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {file.name}
+              </span>
+              <button 
+                onClick={removeFile}
+                disabled={isAnalyzing}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', marginLeft: '0.2rem' }}
+              >
+                <X size={14} />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Bottom Action Bar */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'transparent' }}>
+          
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".log,.txt" />
+          
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isAnalyzing}
+            className="btn-icon"
+            style={{ color: 'var(--text-tertiary)', background: 'transparent', padding: '0.5rem', border: 'none' }}
+            title="Attach log file"
+          >
+            <Paperclip size={20} />
+          </button>
+
+          <button 
+            onClick={handleProcess}
+            disabled={!hasInput || isAnalyzing}
+            className="btn-primary"
+            style={{ 
+              borderRadius: '50px', 
+              padding: '0.5rem 1.25rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.4rem',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              opacity: (!hasInput || isAnalyzing) ? 0.5 : 1,
+              background: hasInput ? 'var(--accent)' : 'var(--bg-secondary)',
+              color: hasInput ? 'var(--bg-primary)' : 'var(--text-tertiary)',
+              border: hasInput ? 'none' : '1px solid var(--border)'
+            }}
+          >
+            {isAnalyzing ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Sparkles size={16} />
+            )}
+            {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+          </button>
+        </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {file && !isAnalyzing && (
-          <motion.div key="btn" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ marginTop: '1.25rem' }}>
-            <button onClick={handleProcess} className="btn-primary" style={{ padding: '0.8rem 2rem', fontSize: '0.95rem' }}>
-              Analyze with AI
-            </button>
-          </motion.div>
-        )}
+      {/* Loading Status Indicator */}
+      <AnimatePresence>
         {isAnalyzing && (
-          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            <Loader2 size={16} className="animate-spin" />
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -10 }}
+            style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 500, padding: '0 1rem' }}
+          >
+            <Loader2 size={14} className="animate-spin" />
             <AnimatePresence mode="wait">
               <motion.span key={loadingMsgIdx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
                 {LOADING_MESSAGES[loadingMsgIdx]}

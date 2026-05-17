@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 from typing import Optional
 import jwt
 import bcrypt
+from app.core.config import settings
 
-# Use a secure secret key in production (ideally from env)
-SECRET_KEY = "super_secret_log2action_jwt_key_change_in_prod"
+SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 week
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))

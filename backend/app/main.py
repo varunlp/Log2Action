@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.api.routes import logs, documents, auth, admin
+from app.api.routes import logs, documents, auth, admin, chat
+from app.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,25 +37,28 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="LOG2ACTION API",
-    description="Operational Intelligence Platform API",
-    version="0.1.0",
+    description="Operational Intelligence Platform — Log Analysis & Knowledge Assistant",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
-# CORS configuration
+# CORS configuration — reads from env, defaults to "*"
+cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the exact frontend domain
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(logs.router, prefix="/api/v1/logs", tags=["Logs"])
+# API Routes
+app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
+app.include_router(logs.router, prefix="/api/v1/logs", tags=["Logs (Legacy)"])
 app.include_router(documents.router, prefix="/api/v1/documents", tags=["Documents"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "log2action_api"}
+    return {"status": "ok", "service": "log2action_api", "version": "1.0.0"}

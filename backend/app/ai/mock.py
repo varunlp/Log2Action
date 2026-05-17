@@ -33,7 +33,6 @@ class MockProvider(BaseAIProvider):
 
         # Extract a meaningful snippet from the log
         lines = log_content.strip().split('\n')
-        # Find the most interesting line (one with error/exception keywords)
         key_line = log_content[:150]
         for line in lines:
             ll = line.lower()
@@ -43,7 +42,6 @@ class MockProvider(BaseAIProvider):
 
         # Build the response using RAG context if available
         if context_docs and len(context_docs) > 0 and context_docs[0].strip():
-            # Use the actual runbook content to build remediation
             combined_context = "\n".join(context_docs[:2])
             
             # Extract actionable sentences — filter out separators, short/garbage lines
@@ -51,14 +49,12 @@ class MockProvider(BaseAIProvider):
             context_sentences = []
             for s in raw_sentences:
                 cleaned = s.strip().strip('=').strip('-').strip('*').strip('#').strip()
-                # Skip empty, too short, or separator-only lines
                 if len(cleaned) < 25:
                     continue
                 if all(c in '=-_*#~' for c in cleaned):
                     continue
                 context_sentences.append(cleaned)
             
-            # Pick up to 5 unique remediation steps from the runbook
             seen = set()
             remediation_steps = []
             for sentence in context_sentences:
@@ -86,7 +82,6 @@ class MockProvider(BaseAIProvider):
                 )
             }
         else:
-            # No RAG context — pure mock response
             mock_response = {
                 "issue_summary": f"Detected {severity}-level issue: {key_line[:120]}",
                 "severity": severity,
@@ -106,6 +101,61 @@ class MockProvider(BaseAIProvider):
         
         return json.dumps(mock_response)
 
+    async def answer_question(self, question: str, context_docs: List[str] = None) -> str:
+        """
+        Simulates knowledge assistant Q&A using RAG context.
+        Builds a realistic answer from the retrieved document chunks.
+        """
+        await asyncio.sleep(1.5)  # Simulate AI thinking time
+        
+        if context_docs and len(context_docs) > 0 and context_docs[0].strip():
+            combined_context = "\n".join(context_docs[:3])
+            
+            # Extract meaningful sentences from context
+            raw_sentences = combined_context.replace('\n', '. ').split('. ')
+            useful_sentences = []
+            for s in raw_sentences:
+                cleaned = s.strip().strip('=').strip('-').strip('*').strip('#').strip()
+                if len(cleaned) >= 30 and not all(c in '=-_*#~' for c in cleaned):
+                    useful_sentences.append(cleaned)
+            
+            # Build a coherent answer from context
+            if useful_sentences:
+                answer_parts = []
+                answer_parts.append(f"Based on your internal documentation, here is what I found regarding your question:\n")
+                
+                for i, sentence in enumerate(useful_sentences[:6]):
+                    answer_parts.append(f"• {sentence}")
+                
+                answer_parts.append(f"\nThis information was retrieved from {len(context_docs)} relevant document chunk(s) in your knowledge base.")
+                
+                answer = "\n".join(answer_parts)
+                confidence = "HIGH"
+            else:
+                answer = (
+                    "I found relevant documents in your knowledge base but couldn't extract "
+                    "specific information for your question. Try rephrasing your query or "
+                    "uploading more detailed documentation."
+                )
+                confidence = "LOW"
+        else:
+            answer = (
+                "I don't have any relevant documents in the knowledge base to answer this question.\n\n"
+                "To get accurate answers:\n"
+                "1. Upload your runbooks, SOPs, or documentation via the Admin Console.\n"
+                "2. The system will automatically index them for future queries.\n"
+                "3. Then ask your question again for a context-aware answer."
+            )
+            confidence = "LOW"
+        
+        mock_response = {
+            "answer": answer,
+            "confidence": confidence,
+            "sources_used": bool(context_docs and len(context_docs) > 0)
+        }
+        
+        return json.dumps(mock_response)
+
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Generates deterministic pseudo-embeddings based on text content.
@@ -114,14 +164,11 @@ class MockProvider(BaseAIProvider):
         """
         embeddings = []
         for text in texts:
-            # Create a deterministic vector from the text content
-            # This ensures similar text produces similar vectors
             vec = [0.0] * 768
             for i, char in enumerate(text.lower()):
                 idx = (ord(char) * (i + 1)) % 768
                 vec[idx] += 0.01
             
-            # Normalize
             magnitude = sum(v ** 2 for v in vec) ** 0.5
             if magnitude > 0:
                 vec = [v / magnitude for v in vec]

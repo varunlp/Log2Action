@@ -20,6 +20,17 @@ class BaseAIProvider(ABC):
         - remediation
         """
         pass
+
+    @abstractmethod
+    async def answer_question(self, question: str, context_docs: List[str] = None) -> str:
+        """
+        Answer a knowledge-base question using RAG context.
+        Return a structured JSON response containing:
+        - answer
+        - confidence (HIGH/MEDIUM/LOW)
+        - sources_used (bool)
+        """
+        pass
     
     @abstractmethod
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:

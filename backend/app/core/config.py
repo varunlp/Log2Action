@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     OLLAMA_BASE_URL: str | None = None
 
+    # Security
+    JWT_SECRET_KEY: str = "super_secret_log2action_jwt_key_change_in_prod"
+    CORS_ORIGINS: str = "*"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

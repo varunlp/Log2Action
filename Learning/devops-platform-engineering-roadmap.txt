@@ -1,0 +1,1499 @@
+DEVOPS AND PLATFORM ENGINEERING LEARNING ROADMAP
+================================================
+
+Purpose
+-------
+
+This roadmap is designed for deep, hands-on DevOps and platform engineering
+learning using your existing application as the base project.
+
+The goal is not to rush through tools.
+The goal is to understand how production systems actually work.
+
+Current status:
+- Application already built
+- Containerized with Docker
+- Docker Compose used
+- Basic Jenkins familiarity
+- Linux familiarity
+- Product support background
+- Strong desire for systems-level understanding
+
+Long-term goal:
+Become genuinely strong in DevOps/platform engineering through hands-on,
+incremental, production-minded learning.
+
+Core principle:
+Every tool should be understood through the system problem it solves.
+
+Always ask:
+- What problem does this solve?
+- What abstraction does it introduce?
+- What does it hide?
+- How do I debug below the abstraction?
+- What failure modes does this create?
+- How would this behave in production?
+
+
+Learning Path Overview
+----------------------
+
+Your project should evolve through these stages:
+
+local process
+  -> Docker container
+  -> Docker Compose system
+  -> CI pipeline
+  -> cloud VM
+  -> managed cloud infrastructure
+  -> Terraform-managed infrastructure
+  -> Kubernetes deployment
+  -> observable production-like system
+  -> GitOps-managed platform
+
+The real deliverable is not only the repository.
+The real deliverable is your ability to reason through:
+
+process -> container -> network -> pipeline -> infrastructure -> orchestrator -> observability -> operations
+
+
+Weekly Operating Model
+----------------------
+
+Use this rhythm every week:
+
+Day 1: Concepts
+- Study the core ideas.
+- Draw diagrams.
+- Explain the system in your own words.
+
+Day 2: Build
+- Apply the concept manually to your project.
+- Avoid excessive automation.
+- Prefer simple, inspectable steps.
+
+Day 3: Inspect
+- Use command-line tools to observe the system.
+- Check processes, ports, logs, files, networks, resources, and state.
+
+Day 4: Break
+- Intentionally introduce failure.
+- Make the system misbehave in controlled ways.
+
+Day 5: Debug
+- Diagnose using evidence.
+- Avoid guessing.
+- Form hypotheses and test them.
+
+Day 6: Document
+- Write notes, runbooks, diagrams, and lessons learned.
+
+Day 7: Review
+- Can I explain this without looking it up?
+- Can I debug this when it fails?
+- Do I understand what this tool hides?
+- Can I operate this under pressure?
+
+
+WEEK 1: LINUX PROCESSES AND RUNTIME FOUNDATIONS
+===============================================
+
+Concepts
+--------
+
+Learn how Linux sees your application before Docker or Kubernetes exist.
+
+Focus areas:
+- Processes
+- PIDs
+- Parent and child processes
+- Environment variables
+- File descriptors
+- Signals
+- Exit codes
+- stdout and stderr
+- CPU, memory, disk, and network basics
+
+Why this matters:
+Every production system eventually becomes processes running on machines.
+Docker and Kubernetes do not remove this reality. They wrap and manage it.
+
+Practical Tasks
+---------------
+
+Run your app directly on Linux without Docker.
+
+Inspect the process:
+
+ps aux
+pstree
+top
+htop
+lsof -p <pid>
+cat /proc/<pid>/status
+cat /proc/<pid>/environ
+
+Start the app, then stop it with different signals:
+
+kill -TERM <pid>
+kill -KILL <pid>
+
+Observe:
+- Does the app shut down cleanly?
+- Does it flush logs?
+- Does it close connections?
+- Does it leave child processes behind?
+
+Debugging Exercises
+-------------------
+
+Break the app deliberately:
+- Start it with a missing environment variable.
+- Bind it to a port already in use.
+- Kill a dependency while it is running.
+- Fill the disk or temp directory.
+- Run it with insufficient permissions.
+
+Observability
+-------------
+
+Capture:
+- CPU usage
+- Memory usage
+- Open files
+- Listening ports
+- Logs
+- Exit code
+
+Useful commands:
+
+ss -lntp
+journalctl
+dmesg
+df -h
+free -m
+top
+lsof
+
+Reflection Points
+-----------------
+
+Answer these in your notes:
+- What exactly is "the application" from the OS point of view?
+- What does it mean for a process to be healthy?
+- What happens when the parent shell exits?
+- What does Docker later abstract away?
+- What is the difference between a crash and a clean exit?
+
+Production Engineering Thinking
+-------------------------------
+
+A production service is a process with discipline around:
+- startup
+- shutdown
+- configuration
+- logging
+- recovery
+- resource limits
+- permissions
+
+
+WEEK 2: LINUX NETWORKING FROM FIRST PRINCIPLES
+==============================================
+
+Concepts
+--------
+
+Focus areas:
+- IP addresses
+- ports
+- TCP and UDP
+- loopback
+- network interfaces
+- DNS resolution
+- routing
+- NAT
+- firewalls
+- connection refused vs timeout
+
+Why this matters:
+Many production outages are network misunderstandings, not application bugs.
+
+Practical Tasks
+---------------
+
+Run your app locally and inspect how clients reach it.
+
+Commands:
+
+ip addr
+ip route
+ss -tulpen
+curl -v http://localhost:<port>
+dig example.com
+nslookup example.com
+traceroute example.com
+
+If available:
+
+tcpdump -i lo port <port>
+
+Debugging Exercises
+-------------------
+
+Create these failures:
+- App listens on 127.0.0.1 but you try to access it externally.
+- App listens on the wrong port.
+- DNS lookup fails.
+- Firewall blocks traffic.
+- A dependency hostname resolves but the port is closed.
+
+Use curl to distinguish:
+- DNS failure
+- TCP connection failure
+- HTTP response failure
+- application-level error
+
+Observability
+-------------
+
+Create a network debugging checklist:
+
+1. Is DNS resolving?
+2. Is the route valid?
+3. Is the port listening?
+4. Is traffic allowed by firewall/security group?
+5. Is the app responding?
+6. Is the response correct?
+
+Reflection Points
+-----------------
+
+Answer:
+- What is the difference between connection refused and timeout?
+- What does localhost mean?
+- Why does localhost change meaning inside containers?
+- What does a listening socket prove?
+- What does it not prove?
+
+Production Engineering Thinking
+-------------------------------
+
+Production network issues often involve:
+- DNS
+- routing
+- firewalls
+- security groups
+- load balancers
+- dependency timeouts
+- wrong bind addresses
+
+
+WEEK 3: DOCKER IMAGE INTERNALS
+==============================
+
+Concepts
+--------
+
+Focus areas:
+- Images vs containers
+- Dockerfile instructions
+- Layers
+- Build context
+- Cache behavior
+- Tags
+- Digests
+- Base images
+- Image size
+
+Why this matters:
+A Docker image is a deployable artifact. If you do not understand how it is
+built, you cannot reason about reproducibility, security, or runtime behavior.
+
+Practical Tasks
+---------------
+
+Inspect your image:
+
+docker image ls
+docker history <image>
+docker inspect <image>
+docker build --no-cache -t app:test .
+
+Experiment:
+- Reorder Dockerfile instructions.
+- Move frequently changing files lower in the Dockerfile.
+- Add and remove files from the build context.
+- Add a .dockerignore file if needed.
+- Compare build time and image size.
+
+Debugging Exercises
+-------------------
+
+Break the build intentionally:
+- Reference a file outside the build context.
+- Use a wrong working directory.
+- Break dependency installation.
+- Use a missing base image tag.
+- Add large unnecessary files to the image.
+
+Observability
+-------------
+
+Track:
+- image size
+- number of layers
+- rebuild time
+- cache hits and misses
+- base image used
+
+Commands:
+
+docker history <image>
+docker inspect <image>
+du -sh .
+
+Reflection Points
+-----------------
+
+Answer:
+- What gets sent to the Docker daemon during build?
+- Why does Docker cache some layers but not others?
+- Why are small images operationally useful?
+- What are the risks of unknown or outdated base images?
+- What is the difference between tag and digest?
+
+Production Engineering Thinking
+-------------------------------
+
+A production image should be:
+- reproducible
+- minimal
+- secure
+- pinned where appropriate
+- easy to scan
+- fast to pull
+- deterministic to build
+
+
+WEEK 4: DOCKER CONTAINERS AND ISOLATION
+=======================================
+
+Concepts
+--------
+
+Focus areas:
+- Container lifecycle
+- Namespaces
+- cgroups
+- Filesystem isolation
+- Process isolation
+- PID 1 behavior
+- Signals
+- Resource limits
+
+Why this matters:
+Containers are isolated Linux processes, not full virtual machines.
+
+Practical Tasks
+---------------
+
+Run your container interactively:
+
+docker run --rm -it <image> sh
+docker ps
+docker inspect <container>
+docker exec -it <container> sh
+
+Inspect from host and container:
+
+ps aux
+lsns
+mount
+hostname
+cat /proc/1/status
+
+Run with resource limits:
+
+docker run --memory=256m --cpus=0.5 <image>
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Container exits immediately.
+- App does not stop gracefully.
+- Container cannot write to a path.
+- Memory limit causes crash.
+- Wrong CMD or ENTRYPOINT.
+- Logs are written to a file instead of stdout/stderr.
+
+Observability
+-------------
+
+Commands:
+
+docker stats
+docker logs <container>
+docker top <container>
+docker inspect <container>
+
+Observe:
+- process tree
+- memory usage
+- CPU usage
+- restart behavior
+- exit code
+
+Reflection Points
+-----------------
+
+Answer:
+- Is a container a lightweight VM? Why or why not?
+- What is shared with the host?
+- Why does PID 1 matter?
+- How do cgroups enforce resource limits?
+- What happens to container filesystem changes after removal?
+
+Production Engineering Thinking
+-------------------------------
+
+Containers fail in production because of:
+- bad startup assumptions
+- missing config
+- poor signal handling
+- resource limits
+- filesystem assumptions
+- poor logging behavior
+
+
+WEEK 5: DOCKER NETWORKING AND VOLUMES
+=====================================
+
+Concepts
+--------
+
+Focus areas:
+- Bridge networks
+- Container DNS
+- Port publishing
+- Expose vs publish
+- Bind mounts
+- Named volumes
+- Ephemeral containers
+- Persistent state
+
+Why this matters:
+Networking and persistence are where simple containers become real systems.
+
+Practical Tasks
+---------------
+
+Create a Docker network:
+
+docker network create app-net
+docker network inspect app-net
+
+Run app and dependency on the same network.
+
+Test service-to-service communication:
+
+docker exec -it <container> sh
+ping <service-name>
+curl http://<service-name>:<port>
+
+Inspect volumes:
+
+docker volume ls
+docker volume inspect <volume>
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Use localhost incorrectly between containers.
+- Publish the wrong host port.
+- Break the service DNS name.
+- Remove a container and check if data survives.
+- Delete a named volume and observe data loss.
+
+Observability
+-------------
+
+Commands:
+
+docker network inspect <network>
+docker volume inspect <volume>
+ss -lntp
+docker inspect <container>
+
+Reflection Points
+-----------------
+
+Answer:
+- Why does localhost inside a container refer to itself?
+- What does Docker DNS provide?
+- What is the difference between expose and publish?
+- When should state live outside the container?
+- What are the operational risks of bind mounts?
+
+Production Engineering Thinking
+-------------------------------
+
+Production systems must treat networking and state explicitly.
+Containers are disposable. Data usually is not.
+
+
+WEEK 6: DOCKER COMPOSE AS A LOCAL SYSTEM
+========================================
+
+Concepts
+--------
+
+Focus areas:
+- Multi-service topology
+- Dependency order
+- Readiness
+- Health checks
+- Environment files
+- Named networks
+- Named volumes
+- Restart policies
+
+Why this matters:
+Compose helps you model a local system, but it does not eliminate distributed
+system behavior.
+
+Practical Tasks
+---------------
+
+Improve your docker-compose.yml gradually.
+
+Add and understand:
+- explicit networks
+- named volumes
+- health checks
+- restart policies
+- .env file
+- service dependencies
+
+Use:
+
+docker compose up
+docker compose down
+docker compose ps
+docker compose logs -f
+docker compose events
+docker compose top
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- App starts before database is ready.
+- Environment variable is missing.
+- One service is killed.
+- Volume data is corrupted.
+- Network name is wrong.
+- Health check command fails.
+
+Observability
+-------------
+
+Observe:
+- service state
+- logs across services
+- restart count
+- health status
+- dependency startup order
+
+Reflection Points
+-----------------
+
+Answer:
+- What does Compose solve?
+- What does Compose not solve?
+- Why is startup order not readiness?
+- How close is Compose to production?
+- What would Kubernetes add later?
+
+Production Engineering Thinking
+-------------------------------
+
+Compose is excellent for local system modeling.
+Production requires stronger scheduling, rollout, recovery, isolation,
+secrets, and access control.
+
+
+WEEK 7: CI/CD FOUNDATIONS WITH JENKINS
+======================================
+
+Concepts
+--------
+
+Focus areas:
+- CI vs CD
+- Pipeline stages
+- Jenkins workspaces
+- Build agents
+- Artifacts
+- Credentials
+- Image tagging
+- Reproducibility
+
+Why this matters:
+A pipeline is also a production system. It needs reliability, security, logs,
+and traceability.
+
+Practical Tasks
+---------------
+
+Build a Jenkins pipeline one stage at a time:
+
+1. checkout
+2. lint or test
+3. build image
+4. scan image
+5. push image
+6. deploy manually
+
+For every run, record:
+- commit SHA
+- image tag
+- build duration
+- failing stage, if any
+- produced artifact
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Failed checkout
+- Missing environment variable
+- Docker permission issue
+- Failing test
+- Broken image tag
+- Credential misconfiguration
+- Registry push failure
+
+Observability
+-------------
+
+Inspect:
+- Jenkins console logs
+- stage durations
+- workspace contents
+- environment variables
+- generated artifacts
+
+Reflection Points
+-----------------
+
+Answer:
+- What makes a build reproducible?
+- Why should deployments trace back to commits?
+- What secrets should never appear in logs?
+- What should fail fast?
+- What should require manual approval?
+
+Production Engineering Thinking
+-------------------------------
+
+CI/CD must provide:
+- auditability
+- repeatability
+- least privilege
+- clear logs
+- rollback strategy
+- artifact traceability
+
+
+WEEK 8: TESTING, SECURITY, AND SUPPLY CHAIN BASICS
+==================================================
+
+Concepts
+--------
+
+Focus areas:
+- Unit tests
+- Integration tests
+- Smoke tests
+- Dockerfile linting
+- Image vulnerability scanning
+- Dependency scanning
+- Secret scanning
+- SBOM basics
+- Running containers as non-root
+
+Why this matters:
+"It builds" is not enough. Production delivery must reduce risk before deploy.
+
+Practical Tasks
+---------------
+
+Add checks to your workflow:
+- application tests
+- Dockerfile linting
+- image scanning
+- secret scanning
+- smoke test after container startup
+
+Tools to explore:
+- hadolint
+- trivy
+- grype
+- syft
+- gitleaks
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Add bad Dockerfile practice.
+- Add a fake secret and detect it.
+- Use an outdated base image.
+- Run as root, then convert to non-root.
+- Add a vulnerable dependency and inspect the report.
+
+Observability
+-------------
+
+Track:
+- vulnerabilities by severity
+- image size
+- container user
+- exposed ports
+- dependency versions
+- scan results over time
+
+Reflection Points
+-----------------
+
+Answer:
+- Why is running as root dangerous?
+- What risks enter through base images?
+- What should block deployment?
+- What should only create a warning?
+- What is an SBOM useful for?
+
+Production Engineering Thinking
+-------------------------------
+
+Security should be part of delivery, not a separate afterthought.
+The pipeline should make risky changes visible before they reach production.
+
+
+WEEK 9: AWS FOUNDATIONS WITHOUT ABSTRACTION
+===========================================
+
+Concepts
+--------
+
+Focus areas:
+- IAM users, roles, and policies
+- VPC
+- Subnets
+- Route tables
+- Internet gateway
+- Security groups
+- EC2
+- EBS
+- CloudWatch basics
+
+Why this matters:
+Manual cloud deployment teaches what infrastructure automation must later
+encode.
+
+Practical Tasks
+---------------
+
+Deploy your app manually to EC2 first.
+
+Steps:
+1. Choose or create a VPC deliberately.
+2. Launch an EC2 instance.
+3. SSH into the instance.
+4. Install Docker.
+5. Run your app container.
+6. Open only the required security group ports.
+7. Inspect logs and health.
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- SSH blocked by security group.
+- App listens only on localhost.
+- App port open locally but blocked by security group.
+- Instance has no internet route.
+- Disk fills with Docker images or logs.
+- IAM role lacks needed permissions.
+
+Observability
+-------------
+
+On the instance:
+
+systemctl status docker
+docker ps
+docker logs <container>
+ss -lntp
+df -h
+free -m
+
+In AWS:
+- EC2 status checks
+- CloudWatch metrics
+- Security group rules
+- Route table routes
+
+Reflection Points
+-----------------
+
+Answer:
+- What is the difference between an OS firewall and a security group?
+- What does a public IP actually mean?
+- Why should IAM permissions be minimal?
+- What breaks if the instance is replaced?
+- What state lives on the instance?
+
+Production Engineering Thinking
+-------------------------------
+
+Cloud systems are still Linux, networking, identity, storage, and processes.
+The cloud adds APIs, managed control planes, and shared responsibility.
+
+
+WEEK 10: AWS LOAD BALANCING AND MANAGED SERVICES
+================================================
+
+Concepts
+--------
+
+Focus areas:
+- Application Load Balancer
+- Target groups
+- Health checks
+- DNS
+- TLS basics
+- Managed databases
+- Stateless application design
+
+Why this matters:
+Load balancers are production control points for availability, routing,
+rollouts, and failure detection.
+
+Practical Tasks
+---------------
+
+Put your app behind an Application Load Balancer.
+
+Understand this path:
+
+client -> DNS -> ALB -> target group -> EC2 -> container -> app
+
+Add a health endpoint if your app does not have one.
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Target unhealthy because health path is wrong.
+- Health check port is wrong.
+- App returns 200 but dependency is broken.
+- Security group allows direct access but not ALB access.
+- ALB listener uses wrong port.
+- Health check timeout too low.
+
+Observability
+-------------
+
+Inspect:
+- target health
+- ALB response codes
+- CloudWatch metrics
+- app logs
+- container logs
+- security groups
+
+Reflection Points
+-----------------
+
+Answer:
+- What makes a good health check?
+- Should health checks test dependencies?
+- Why hide EC2 behind a load balancer?
+- What is the difference between liveness and readiness?
+- What does the ALB know that the app does not?
+
+Production Engineering Thinking
+-------------------------------
+
+A load balancer is not just a traffic forwarder.
+It participates in health, failure isolation, rollout behavior, and user
+experience.
+
+
+WEEK 11: TERRAFORM FUNDAMENTALS
+===============================
+
+Concepts
+--------
+
+Focus areas:
+- Desired state
+- Providers
+- Resources
+- State file
+- Plan and apply
+- Drift
+- Variables
+- Outputs
+- Remote state
+- State locking
+
+Why this matters:
+Terraform gives repeatability, but state and destructive changes must be
+understood carefully.
+
+Practical Tasks
+---------------
+
+Recreate a small part of AWS setup with Terraform.
+
+Start with:
+- security group
+- EC2 instance
+- IAM role
+- simple networking resource
+
+Commands:
+
+terraform init
+terraform fmt
+terraform validate
+terraform plan
+terraform apply
+terraform state list
+terraform show
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Change infrastructure manually, then run terraform plan.
+- Rename a resource and observe destroy/create behavior.
+- Break a variable.
+- Inspect the state file.
+- Import an existing resource.
+
+Observability
+-------------
+
+Track:
+- what Terraform state says exists
+- what AWS actually has
+- what terraform plan proposes
+- what will be replaced vs updated
+
+Reflection Points
+-----------------
+
+Answer:
+- Why is Terraform state sensitive?
+- What is drift?
+- Why should plans be reviewed?
+- Why can renaming a resource be dangerous?
+- What belongs in variables vs hardcoded values?
+
+Production Engineering Thinking
+-------------------------------
+
+Infrastructure code is still production change.
+It needs review, locking, least privilege, rollback thinking, and blast-radius
+awareness.
+
+
+WEEK 12: KUBERNETES CORE CONCEPTS
+=================================
+
+Concepts
+--------
+
+Focus areas:
+- Cluster
+- Node
+- Pod
+- Deployment
+- ReplicaSet
+- Service
+- ConfigMap
+- Secret
+- Namespace
+- Labels and selectors
+- Reconciliation loop
+
+Why this matters:
+Kubernetes is a control loop system driven by desired state.
+
+Practical Tasks
+---------------
+
+Run your app on local Kubernetes using kind or minikube.
+
+Create manually:
+- Deployment
+- Service
+- ConfigMap
+- Secret
+
+Commands:
+
+kubectl get pods
+kubectl describe pod <pod>
+kubectl logs <pod>
+kubectl get events
+kubectl exec -it <pod> -- sh
+kubectl get all
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Image pull failure.
+- Wrong container port.
+- Bad environment variable.
+- Pod crash loop.
+- Service selector mismatch.
+- ConfigMap update not reflected as expected.
+- Secret missing.
+
+Observability
+-------------
+
+Use:
+
+kubectl get all
+kubectl describe
+kubectl logs
+kubectl top pods
+kubectl get events --sort-by=.metadata.creationTimestamp
+
+Reflection Points
+-----------------
+
+Answer:
+- What does Kubernetes continuously reconcile?
+- Why is a pod not the same as a container?
+- What does a Service actually do?
+- Why do labels matter?
+- What is the role of the scheduler?
+
+Production Engineering Thinking
+-------------------------------
+
+Kubernetes does not remove operational complexity.
+It standardizes how desired state, scheduling, health, and recovery are handled.
+
+
+WEEK 13: KUBERNETES OPERATIONS
+==============================
+
+Concepts
+--------
+
+Focus areas:
+- Readiness probes
+- Liveness probes
+- Startup probes
+- Resource requests
+- Resource limits
+- Rolling updates
+- Rollbacks
+- Ingress
+- Namespaces
+- RBAC basics
+- Persistent volumes
+
+Why this matters:
+Kubernetes reliability depends heavily on accurate health signals and resource
+declarations.
+
+Practical Tasks
+---------------
+
+Improve your Kubernetes manifests.
+
+Add:
+- readiness probe
+- liveness probe
+- resource requests
+- resource limits
+- rolling update strategy
+- ingress, if appropriate
+
+Commands:
+
+kubectl rollout status deployment/<name>
+kubectl rollout history deployment/<name>
+kubectl rollout undo deployment/<name>
+kubectl describe deployment <name>
+kubectl describe pod <pod>
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- Readiness probe fails.
+- Liveness probe kills app too aggressively.
+- Bad rollout causes partial outage.
+- CPU limit causes throttling.
+- Memory limit causes OOMKilled.
+- Ingress routes to wrong service.
+- Service has no endpoints.
+
+Observability
+-------------
+
+Use:
+
+kubectl describe pod
+kubectl describe deployment
+kubectl get endpoints
+kubectl top pod
+kubectl logs --previous
+kubectl get events
+
+Reflection Points
+-----------------
+
+Answer:
+- When should a pod be alive but not ready?
+- Why are resource requests important for scheduling?
+- What causes CrashLoopBackOff?
+- What does OOMKilled tell you?
+- What is the difference between rollout failure and app failure?
+
+Production Engineering Thinking
+-------------------------------
+
+Good Kubernetes operations depend on:
+- health signals
+- resource discipline
+- rollout safety
+- observability
+- clear ownership
+- controlled change
+
+
+WEEK 14: OBSERVABILITY DEEP DIVE
+================================
+
+Concepts
+--------
+
+Focus areas:
+- Logs
+- Metrics
+- Traces
+- RED method
+- USE method
+- SLIs
+- SLOs
+- Alert fatigue
+- Dashboards vs debugging
+
+Why this matters:
+Observability is not collecting everything. It is designing signals that help
+you make decisions during uncertainty.
+
+Practical Tasks
+---------------
+
+Add an observability stack.
+
+Minimum:
+- Prometheus
+- Grafana
+- application metrics
+- container or node metrics
+- centralized logs
+
+Later:
+- OpenTelemetry traces
+- distributed tracing
+- alerting rules
+
+Debugging Exercises
+-------------------
+
+Simulate:
+- increased latency
+- error rate spike
+- container restarts
+- disk pressure
+- dependency timeout
+- CPU saturation
+- memory leak
+
+Observability
+-------------
+
+Build dashboards for:
+- request rate
+- error rate
+- latency
+- CPU usage
+- memory usage
+- restarts
+- container health
+- dependency health
+
+Reflection Points
+-----------------
+
+Answer:
+- What would wake someone up at 3 AM?
+- Which metrics indicate user pain?
+- Which metrics are only symptoms?
+- What logs matter during an incident?
+- What signal was missing when debugging was hard?
+
+Production Engineering Thinking
+-------------------------------
+
+A useful alert should be:
+- actionable
+- tied to user impact
+- owned by someone
+- supported by dashboards and runbooks
+
+
+WEEK 15: GITOPS
+===============
+
+Concepts
+--------
+
+Focus areas:
+- Desired state in Git
+- Reconciliation
+- Drift detection
+- Pull-based deployment
+- Argo CD or Flux
+- Environment promotion
+- Declarative operations
+
+Why this matters:
+GitOps makes operational changes reviewable, repeatable, and auditable.
+
+Practical Tasks
+---------------
+
+Install Argo CD locally or in a test cluster.
+
+Put Kubernetes manifests in Git.
+
+Have Argo CD sync your app.
+
+Test:
+- change manifest in Git
+- observe sync
+- change cluster manually
+- observe drift
+- restore desired state from Git
+
+Debugging Exercises
+-------------------
+
+Create failures:
+- App out of sync.
+- Bad manifest blocks sync.
+- Manual cluster change overwritten.
+- Wrong namespace.
+- Secret/config mismatch.
+- Image tag does not exist.
+
+Observability
+-------------
+
+Inspect:
+- Argo CD application health
+- sync status
+- Kubernetes events
+- deployment rollout status
+- pod logs
+
+Reflection Points
+-----------------
+
+Answer:
+- Why is Git a good source of desired state?
+- What should not go into plain Git?
+- How does GitOps change operational behavior?
+- What risks come from automatic sync?
+- How should secrets be handled?
+
+Production Engineering Thinking
+-------------------------------
+
+GitOps improves auditability and repeatability.
+It also makes repository structure, secret handling, and environment promotion
+very important.
+
+
+WEEK 16: PRODUCTION SIMULATION AND INCIDENT PRACTICE
+====================================================
+
+Concepts
+--------
+
+Focus areas:
+- Incident response
+- Rollback
+- Capacity
+- Backups
+- Disaster recovery
+- Runbooks
+- Postmortems
+- Change management
+
+Why this matters:
+Strong engineers are not defined by never breaking systems.
+They are defined by how well they detect, contain, recover, and learn.
+
+Practical Tasks
+---------------
+
+Create:
+- deployment runbook
+- rollback procedure
+- debugging checklist
+- architecture diagram
+- failure mode list
+- incident report template
+
+Run controlled incidents:
+- bad deployment
+- dependency outage
+- high CPU
+- memory leak
+- disk full
+- network block
+- bad config
+- expired secret or certificate simulation
+
+Debugging Exercises
+-------------------
+
+For each incident:
+
+1. Detect the issue.
+2. Identify user impact.
+3. Form a hypothesis.
+4. Inspect evidence.
+5. Mitigate.
+6. Recover.
+7. Write a short postmortem.
+
+Observability
+-------------
+
+For every incident, answer:
+- How did I know something was wrong?
+- What signal was missing?
+- What alert would have helped?
+- What dashboard helped?
+- What log line mattered?
+- What command gave the clearest evidence?
+
+Reflection Points
+-----------------
+
+Answer:
+- What failed technically?
+- What failed operationally?
+- Could this have been caught earlier?
+- Was rollback easy?
+- Was the system understandable under stress?
+- What should be documented before this happens again?
+
+Production Engineering Thinking
+-------------------------------
+
+Production engineering is the practice of making systems:
+- understandable
+- observable
+- recoverable
+- secure
+- repeatable
+- operable under pressure
+
+
+Long-Term Project Deliverables
+==============================
+
+By the end of this roadmap, your project should contain or be supported by:
+
+- Application source
+- Dockerfile
+- .dockerignore
+- Docker Compose stack
+- CI pipeline
+- Image scanning
+- Secret scanning
+- AWS deployment notes
+- Terraform infrastructure
+- Kubernetes manifests
+- Health checks
+- Metrics
+- Logs
+- Dashboards
+- GitOps deployment
+- Runbooks
+- Incident exercises
+- Postmortems
+- Architecture diagrams
+
+
+Study Rules
+===========
+
+1. Do not optimize for speed.
+2. Do not blindly copy commands.
+3. Before running a command, know what question it answers.
+4. After running a command, inspect the output carefully.
+5. Break things intentionally.
+6. Debug from evidence.
+7. Keep notes.
+8. Prefer understanding over memorization.
+9. Learn what each abstraction hides.
+10. Always connect local behavior to production behavior.
+
+
+First Session Starting Point
+============================
+
+Start with Week 1.
+
+Your first task:
+Run the application directly on Linux without Docker.
+
+Then inspect:
+
+ps aux
+ss -lntp
+lsof -p <pid>
+cat /proc/<pid>/status
+curl -v http://localhost:<port>
+
+Write down:
+- process ID
+- listening port
+- memory usage
+- environment variables required
+- how the app behaves when stopped with SIGTERM
+- what logs are produced
+
+Do not move to Docker internals until you can explain your application as a
+Linux process.

@@ -44,13 +44,23 @@ app = FastAPI(
 
 # CORS configuration — reads from env, defaults to "*"
 cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+if "*" in cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=".*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # API Routes
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])

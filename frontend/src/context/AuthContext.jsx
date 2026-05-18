@@ -61,7 +61,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password) => {
-    await axios.post(`${API_BASE}/api/v1/auth/register`, { email, password });
+    const response = await axios.post(`${API_BASE}/api/v1/auth/register`, { email, password });
+    return response.data;
   };
 
   const toggleTheme = () => setIsDark(prev => !prev);

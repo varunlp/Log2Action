@@ -6,6 +6,7 @@ import API_BASE from '../config';
 import { Users, Activity, CheckCircle, ArrowLeft, Loader2, Terminal, Database, UploadCloud, FileText, Trash2, File } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import toast from 'react-hot-toast';
+import { getApiErrorMessage } from '../utils/errors';
 
 /* ── Severity badge ── */
 const SeverityBadge = ({ severity }) => {
@@ -82,7 +83,7 @@ export default function AdminDashboard() {
       if (kbInputRef.current) kbInputRef.current.value = '';
       fetchAll();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Upload failed');
+      toast.error(getApiErrorMessage(err, 'Upload failed'));
     } finally {
       setKbUploading(false);
     }

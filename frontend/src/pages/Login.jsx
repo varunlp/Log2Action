@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Terminal, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import { getApiErrorMessage } from '../utils/errors';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to login');
+      setError(getApiErrorMessage(err, 'Failed to login'));
     } finally {
       setLoading(false);
     }

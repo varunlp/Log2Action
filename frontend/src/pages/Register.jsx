@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Lock, Mail, AlertCircle, CheckCircle, ArrowRight, Terminal } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import { getApiErrorMessage } from '../utils/errors';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -20,11 +21,15 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password);
-      setSuccess('Request submitted! An admin will approve your access shortly.');
+      const createdUser = await register(email, password);
+      setSuccess(
+        createdUser?.is_admin && createdUser?.is_approved
+          ? 'Admin account created. Sign in with these credentials.'
+          : 'Request submitted. An admin will approve your access shortly.'
+      );
       setTimeout(() => navigate('/login'), 4000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to register');
+      setError(getApiErrorMessage(err, 'Failed to register'));
     } finally {
       setLoading(false);
     }
@@ -81,7 +86,7 @@ export default function Register() {
             </div>
             <div style={{ position: 'relative' }}>
               <Lock size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
-              <input type="password" placeholder="Password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} style={{ paddingLeft: '2.5rem' }} />
+              <input type="password" placeholder="Password (10+ chars, Aa1)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} style={{ paddingLeft: '2.5rem' }} />
             </div>
             <button type="submit" className="btn-primary" disabled={loading || success} style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem', fontSize: '0.95rem', background: success ? 'var(--success)' : '' }}>
               {loading ? 'Submitting...' : success ? 'Request sent ✓' : 'Request access'} {!success && <ArrowRight size={15} />}

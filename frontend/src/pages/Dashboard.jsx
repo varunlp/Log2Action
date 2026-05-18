@@ -10,6 +10,7 @@ import ChatMessage from '../components/ChatMessage';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle';
+import { getApiErrorMessage } from '../utils/errors';
 
 
 function groupByDate(items) {
@@ -80,7 +81,7 @@ export default function Dashboard() {
       toast.success(data.mode === 'log_analysis' ? 'Analysis complete' : 'Answer generated');
       loadSidebarHistory();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "An error occurred.");
+      toast.error(getApiErrorMessage(err, "An error occurred."));
     } finally { setIsAnalyzing(false); }
   };
 
@@ -101,7 +102,7 @@ export default function Dashboard() {
       toast.success('Analysis complete');
       loadSidebarHistory();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "File upload failed.");
+      toast.error(getApiErrorMessage(err, "File upload failed."));
     } finally { setIsAnalyzing(false); }
   };
 

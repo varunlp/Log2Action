@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
@@ -53,6 +55,23 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    messages = []
+    for error in exc.errors():
+        message = error.get("msg", "Invalid request")
+        location = [str(part) for part in error.get("loc", []) if part not in {"body", "query", "path"}]
+        if location:
+            messages.append(f"{'.'.join(location)}: {message}")
+        else:
+            messages.append(message)
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": "; ".join(messages) or "Invalid request"},
+    )
 
 # Host and browser security middleware
 if "*" not in settings.allowed_host_list:

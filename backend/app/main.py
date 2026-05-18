@@ -13,10 +13,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         if settings.is_production:
+            response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
             response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return response
 
@@ -86,14 +86,16 @@ if "*" not in settings.allowed_host_list:
 
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS configuration — use explicit origins in production
+# CORS configuration — allow_origin_regex echoes origin back, enabling credentials from any domain
 cors_origins = settings.cors_origin_list
 
 if "*" in cors_origins:
+    # Regex ".*" matches any origin and echoes it back, allowing credentials to work
+    # from Cloud Shell, EC2, Gitpod, Codespaces, or any dynamic domain
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
+        allow_origin_regex=".*",
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )

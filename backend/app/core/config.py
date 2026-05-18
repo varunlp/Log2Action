@@ -37,8 +37,8 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_EMAIL: str | None = None
     BOOTSTRAP_ADMIN_PASSWORD: str | None = None
     ENABLE_DEV_ADMIN: bool = True
-    DEV_ADMIN_EMAIL: str = "admin@log2action.local"
-    DEV_ADMIN_PASSWORD: str = "AdminPass1234"
+    DEV_ADMIN_EMAIL: str = "admin@log2action.com"
+    DEV_ADMIN_PASSWORD: str = "admin123"
     FIRST_USER_AUTO_ADMIN: bool = True
 
     @field_validator("ENVIRONMENT")

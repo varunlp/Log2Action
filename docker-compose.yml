@@ -33,15 +33,10 @@ services:
       - AI_PROVIDER=${AI_PROVIDER:-mock}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-super_secret_log2action_jwt_key_change_in_prod}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:8000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
-      - BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:-}
-      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:-}
-      - ENABLE_DEV_ADMIN=${ENABLE_DEV_ADMIN:-true}
-      - DEV_ADMIN_EMAIL=${DEV_ADMIN_EMAIL:-admin@log2action.local}
-      - DEV_ADMIN_PASSWORD=${DEV_ADMIN_PASSWORD:-AdminPass1234}
-      - FIRST_USER_AUTO_ADMIN=${FIRST_USER_AUTO_ADMIN:-true}
-      - MAX_UPLOAD_BYTES=${MAX_UPLOAD_BYTES:-10485760}
+      - BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:-admin@log2action.com}
+      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:-admin123}
     depends_on:
       db:
         condition: service_healthy
@@ -50,8 +45,6 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        VITE_API_URL: ${VITE_API_URL:-}
     container_name: log2action_frontend
     ports:
       - "8080:80"

@@ -16,9 +16,21 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const passwordRules = [
+    { label: '10+ characters', valid: password.length >= 10 },
+    { label: 'uppercase letter', valid: /[A-Z]/.test(password) },
+    { label: 'lowercase letter', valid: /[a-z]/.test(password) },
+    { label: 'number', valid: /\d/.test(password) },
+  ];
+  const passwordIsValid = passwordRules.every((rule) => rule.valid);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!passwordIsValid) {
+      setError('Password must include 10+ characters, uppercase, lowercase, and a number.');
+      return;
+    }
     setLoading(true);
     try {
       const createdUser = await register(email, password);
@@ -88,7 +100,14 @@ export default function Register() {
               <Lock size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
               <input type="password" placeholder="Password (10+ chars, Aa1)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} style={{ paddingLeft: '2.5rem' }} />
             </div>
-            <button type="submit" className="btn-primary" disabled={loading || success} style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem', fontSize: '0.95rem', background: success ? 'var(--success)' : '' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem 0.75rem', fontSize: '0.74rem', color: 'var(--text-tertiary)' }}>
+              {passwordRules.map((rule) => (
+                <span key={rule.label} style={{ color: rule.valid ? 'var(--success)' : 'var(--text-tertiary)' }}>
+                  {rule.valid ? '✓' : '•'} {rule.label}
+                </span>
+              ))}
+            </div>
+            <button type="submit" className="btn-primary" disabled={loading || success || !passwordIsValid} style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem', fontSize: '0.95rem', background: success ? 'var(--success)' : '', opacity: (!passwordIsValid || loading || success) ? 0.65 : 1 }}>
               {loading ? 'Submitting...' : success ? 'Request sent ✓' : 'Request access'} {!success && <ArrowRight size={15} />}
             </button>
           </form>

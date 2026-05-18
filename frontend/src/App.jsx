@@ -9,8 +9,10 @@ import Landing from './pages/Landing';
 
 const ProtectedRoute = ({ children }) => {
   const { user, token } = useAuth();
+  const storedToken = localStorage.getItem('token');
+  const effectiveToken = token || storedToken;
   
-  if (!token) {
+  if (!effectiveToken) {
     return <Navigate to="/login" replace />;
   }
   

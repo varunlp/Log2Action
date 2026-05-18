@@ -5,10 +5,15 @@ import axios from 'axios';
 import API_BASE from '../config';
 
 const AuthContext = createContext();
+const initialToken = localStorage.getItem('token') || null;
+
+if (initialToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`;
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [token, setToken] = useState(initialToken);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
 
   // Theme toggle — persisted and global
@@ -55,9 +60,11 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.post(`${API_BASE}/api/v1/auth/login`, formData);
     const { access_token, user: userData } = response.data;
     
+    axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+    localStorage.setItem('token', access_token);
     setToken(access_token);
     setUser(userData);
-    localStorage.setItem('token', access_token);
+    return response.data;
   };
 
   const register = async (email, password) => {

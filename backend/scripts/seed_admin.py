@@ -7,28 +7,34 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.db.session import SessionLocal
 from app.models.domain import User
 from app.core.security import get_password_hash
+from app.core.config import settings
 
 def seed_admin():
     db = SessionLocal()
     try:
-        admin_email = "admin@log2action.com"
+        admin_email, admin_password = settings.bootstrap_admin_credentials
+        if not admin_email or not admin_password:
+            print("No bootstrap admin credentials configured.")
+            return
         
-        # Check if admin already exists
         user = db.query(User).filter(User.email == admin_email).first()
         if user:
-            print(f"Admin user {admin_email} already exists.")
+            user.hashed_password = get_password_hash(admin_password)
+            user.is_admin = True
+            user.is_approved = True
+            db.commit()
+            print(f"Admin user {admin_email} is ready.")
             return
 
-        # Create admin user
         admin = User(
             email=admin_email,
-            hashed_password=get_password_hash("admin123"),
+            hashed_password=get_password_hash(admin_password),
             is_admin=True,
             is_approved=True
         )
         db.add(admin)
         db.commit()
-        print(f"Successfully created admin user: {admin_email} with password: admin123")
+        print(f"Successfully created admin user: {admin_email}")
     except Exception as e:
         print(f"Error seeding database: {e}")
     finally:

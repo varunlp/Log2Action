@@ -24,24 +24,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Run startup tasks before the app accepts requests."""
-    if settings.BOOTSTRAP_ADMIN_EMAIL and settings.BOOTSTRAP_ADMIN_PASSWORD:
+    admin_email, admin_password = settings.bootstrap_admin_credentials
+    if admin_email and admin_password:
         from app.db.session import SessionLocal
         from app.models.domain import User
         from app.core.security import get_password_hash
 
         db = SessionLocal()
         try:
-            exists = db.query(User).filter(User.email == settings.BOOTSTRAP_ADMIN_EMAIL).first()
-            if not exists:
+            existing_admin = db.query(User).filter(User.email == admin_email).first()
+            if existing_admin:
+                existing_admin.hashed_password = get_password_hash(admin_password)
+                existing_admin.is_admin = True
+                existing_admin.is_approved = True
+                db.commit()
+                print(f"[BOOTSTRAP] Admin user ready: {admin_email}")
+            else:
                 admin_user = User(
-                    email=settings.BOOTSTRAP_ADMIN_EMAIL,
-                    hashed_password=get_password_hash(settings.BOOTSTRAP_ADMIN_PASSWORD),
+                    email=admin_email,
+                    hashed_password=get_password_hash(admin_password),
                     is_admin=True,
                     is_approved=True
                 )
                 db.add(admin_user)
                 db.commit()
-                print(f"[BOOTSTRAP] Created admin user: {settings.BOOTSTRAP_ADMIN_EMAIL}")
+                print(f"[BOOTSTRAP] Created admin user: {admin_email}")
         except Exception as e:
             print(f"[BOOTSTRAP] Error: {e}")
         finally:

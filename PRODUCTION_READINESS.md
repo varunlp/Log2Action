@@ -13,6 +13,7 @@ This app is closer to deployable after the hardening pass in this branch, but pr
 - Configure TLS at the load balancer or reverse proxy.
 - Configure `VITE_API_URL` only when the API is on a different domain. Leave it empty for same-origin nginx proxying.
 - Create the first admin with `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`, then remove both values after the admin exists.
+- Keep `ENABLE_DEV_ADMIN=false` in any shared or production-like environment. The built-in development admin exists only for local and Cloud Shell demos.
 - Keep `FIRST_USER_AUTO_ADMIN` as a local development convenience only. In production, first-user admin creation is disabled.
 - Use `AI_PROVIDER=gemini` with `GEMINI_API_KEY` for real analysis. Keep `mock` for demos and tests only.
 

@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024
     BOOTSTRAP_ADMIN_EMAIL: str | None = None
     BOOTSTRAP_ADMIN_PASSWORD: str | None = None
+    ENABLE_DEV_ADMIN: bool = True
+    DEV_ADMIN_EMAIL: str = "admin@log2action.local"
+    DEV_ADMIN_PASSWORD: str = "AdminPass1234"
     FIRST_USER_AUTO_ADMIN: bool = True
 
     @field_validator("ENVIRONMENT")
@@ -54,6 +57,16 @@ class Settings(BaseSettings):
     @property
     def allowed_host_list(self) -> list[str]:
         return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
+
+    @property
+    def bootstrap_admin_credentials(self) -> tuple[str | None, str | None]:
+        if self.BOOTSTRAP_ADMIN_EMAIL and self.BOOTSTRAP_ADMIN_PASSWORD:
+            return self.BOOTSTRAP_ADMIN_EMAIL, self.BOOTSTRAP_ADMIN_PASSWORD
+
+        if not self.is_production and self.ENABLE_DEV_ADMIN:
+            return self.DEV_ADMIN_EMAIL, self.DEV_ADMIN_PASSWORD
+
+        return None, None
 
     def validate_runtime_safety(self) -> None:
         if not self.is_production:

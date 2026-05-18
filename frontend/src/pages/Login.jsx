@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Terminal, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import { getApiErrorMessage } from '../utils/errors';
@@ -12,22 +12,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login, token, user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (token && user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [navigate, token, user]);
-
+  const { login } = useAuth();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard', { replace: true });
+      window.location.assign('/dashboard');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to login'));
     } finally {

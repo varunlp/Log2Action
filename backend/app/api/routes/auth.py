@@ -6,11 +6,13 @@ from app.db.session import get_db
 from app.models.domain import User
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.rate_limit import rate_limit_auth
+from app.core.config import settings
 from app.api.deps import get_current_user
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, dependencies=[Depends(rate_limit_auth)])
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     # Check if user exists
     user = db.query(User).filter(User.email == user_in.email).first()
@@ -20,8 +22,12 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             detail="The user with this email already exists in the system.",
         )
     
-    # If this is the very first user, make them an admin and approve them automatically
-    is_first_user = db.query(User).count() == 0
+    # Developer convenience only. Production admin creation should use bootstrap env vars.
+    is_first_user = (
+        settings.FIRST_USER_AUTO_ADMIN
+        and not settings.is_production
+        and db.query(User).count() == 0
+    )
     
     user = User(
         email=user_in.email,
@@ -34,7 +40,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, dependencies=[Depends(rate_limit_auth)])
 def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):

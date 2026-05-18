@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
 class TextAnalyzeRequest(BaseModel):
-    text: str
+    text: str = Field(min_length=1, max_length=200_000)
 
 
 class AnalysisResultSchema(BaseModel):
@@ -24,8 +24,8 @@ class LogUploadResponse(BaseModel):
 # ── Chat Schemas ──
 
 class ChatRequest(BaseModel):
-    text: str
-    mode: str = "auto"  # "auto" | "log_analysis" | "knowledge"
+    text: str = Field(min_length=1, max_length=200_000)
+    mode: str = Field(default="auto", pattern="^(auto|log_analysis|knowledge)$")
 
 class SourceCitation(BaseModel):
     document_name: str

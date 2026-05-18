@@ -33,7 +33,12 @@ async def upload_log(
         # 2. RAG Context Retrieval
         from app.services.rag import rag_service
         query_snippet = raw_text[:500]
-        context_docs = await rag_service.retrieve_relevant_docs(query_snippet, db, limit=3)
+        context_docs = await rag_service.retrieve_relevant_docs(
+            query_snippet,
+            db,
+            limit=3,
+            user_id=current_user.id
+        )
         
         # 3. Call AI Provider
         ai_provider = get_ai_provider()
@@ -90,7 +95,12 @@ async def analyze_text(
         # 2. RAG Context Retrieval
         from app.services.rag import rag_service
         query_snippet = raw_text[:500]
-        context_docs = await rag_service.retrieve_relevant_docs(query_snippet, db, limit=3)
+        context_docs = await rag_service.retrieve_relevant_docs(
+            query_snippet,
+            db,
+            limit=3,
+            user_id=current_user.id
+        )
         
         # 3. Call AI Provider
         ai_provider = get_ai_provider()

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Paperclip, Loader2, X, FileText, Send } from 'lucide-react';
 
@@ -14,9 +14,8 @@ export default function UploadZone({ onSubmit, onUploadFile, isAnalyzing, mode }
 
   const loadingMessages = mode === 'log_analysis' ? LOG_LOADING : KB_LOADING;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAnalyzing) return;
-    setLoadingMsgIdx(0);
     const interval = setInterval(() => { setLoadingMsgIdx((prev) => (prev + 1) % loadingMessages.length); }, 2200);
     return () => clearInterval(interval);
   }, [isAnalyzing, loadingMessages]);

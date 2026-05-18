@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 import API_BASE from '../config';
@@ -21,16 +22,13 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isDark]);
 
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchCurrentUser();
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  }, [token]);
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+  }, []);
 
-  const fetchCurrentUser = async () => {
+  const fetchCurrentUser = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE}/api/v1/auth/me`);
       setUser(response.data);
@@ -38,7 +36,16 @@ export const AuthProvider = ({ children }) => {
       console.error("Failed to fetch user", err);
       logout();
     }
-  };
+  }, [logout]);
+
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchCurrentUser();
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }, [token, fetchCurrentUser]);
 
   const login = async (email, password) => {
     const formData = new URLSearchParams();
@@ -55,12 +62,6 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password) => {
     await axios.post(`${API_BASE}/api/v1/auth/register`, { email, password });
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
   };
 
   const toggleTheme = () => setIsDark(prev => !prev);

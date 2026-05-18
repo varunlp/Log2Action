@@ -10,11 +10,9 @@ from app.models.domain import Document, DocumentChunk, User
 from app.services.rag import rag_service
 from app.services.ingestion import parse_document, validate_file, get_file_type
 from app.api.deps import get_current_active_user
+from app.core.config import settings
 
 router = APIRouter()
-
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-
 
 @router.post("/upload")
 async def upload_document(
@@ -37,8 +35,9 @@ async def upload_document(
         content = await file.read()
         
         # Validate file size
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 10 MB.")
+        if len(content) > settings.MAX_UPLOAD_BYTES:
+            max_mb = settings.MAX_UPLOAD_BYTES // (1024 * 1024)
+            raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {max_mb} MB.")
         
         # Parse document based on type
         raw_text = parse_document(file.filename, content)
@@ -94,11 +93,11 @@ def list_documents(
     """
     List all uploaded documents with metadata.
     """
-    docs = (
-        db.query(Document)
-        .order_by(Document.created_at.desc())
-        .all()
-    )
+    query = db.query(Document)
+    if not current_user.is_admin:
+        query = query.filter(Document.uploaded_by == current_user.id)
+
+    docs = query.order_by(Document.created_at.desc()).all()
     
     return [
         {
@@ -123,7 +122,11 @@ def delete_document(
     Delete a document and all its associated chunks.
     Cascade delete handles chunk cleanup.
     """
-    doc = db.query(Document).filter(Document.id == document_id).first()
+    query = db.query(Document).filter(Document.id == document_id)
+    if not current_user.is_admin:
+        query = query.filter(Document.uploaded_by == current_user.id)
+
+    doc = query.first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     

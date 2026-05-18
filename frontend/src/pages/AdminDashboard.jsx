@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE from '../config';
-import { Users, Activity, CheckCircle, ArrowLeft, Loader2, Terminal, Database, UploadCloud, FileText, AlertCircle, Trash2, File } from 'lucide-react';
+import { Users, Activity, CheckCircle, ArrowLeft, Loader2, Terminal, Database, UploadCloud, FileText, Trash2, File } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import toast from 'react-hot-toast';
 
@@ -40,9 +40,9 @@ export default function AdminDashboard() {
   // KB upload
   const [kbFile, setKbFile] = useState(null);
   const [kbUploading, setKbUploading] = useState(false);
-  const kbInputRef = React.useRef(null);
+  const kbInputRef = useRef(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       const [statsRes, usersRes, activityRes, docsRes] = await Promise.all([
         axios.get(`${API_BASE}/api/v1/admin/stats`),
@@ -59,9 +59,9 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleApprove = async (userId) => {
     await axios.post(`${API_BASE}/api/v1/admin/users/${userId}/approve`);
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
       await axios.delete(`${API_BASE}/api/v1/documents/${docId}`);
       toast.success(`Deleted ${filename}`);
       setDocuments(prev => prev.filter(d => d.id !== docId));
-    } catch (err) {
+    } catch {
       toast.error('Delete failed');
     }
   };

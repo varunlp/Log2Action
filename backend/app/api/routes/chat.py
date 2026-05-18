@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.domain import ChatMessage, User
 from app.schemas.dto import ChatRequest, ChatResponse, ChatHistoryItem
 from app.api.deps import get_current_active_user
+from app.core.config import settings
 from app.services.intent_router import detect_intent, IntentType
 from app.services.log_analysis import analyze_log_content
 from app.services.knowledge_assistant import answer_knowledge_query
@@ -111,6 +112,10 @@ async def chat_with_file(
     """
     try:
         content = await file.read()
+        if len(content) > settings.MAX_UPLOAD_BYTES:
+            max_mb = settings.MAX_UPLOAD_BYTES // (1024 * 1024)
+            raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {max_mb} MB.")
+
         raw_text = content.decode("utf-8", errors="ignore")
         
         result = await analyze_log_content(
@@ -188,4 +193,3 @@ def clear_chat_history(
     db.query(ChatMessage).filter(ChatMessage.user_id == current_user.id).delete()
     db.commit()
     return {"status": "success", "message": "Chat history cleared."}
-

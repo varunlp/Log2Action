@@ -21,7 +21,7 @@ async def answer_knowledge_query(
     Returns dict with: mode, answer, confidence, sources[]
     """
     # 1. Hybrid RAG Retrieval
-    context_chunks = await rag_service.hybrid_retrieve(question, db, limit=5)
+    context_chunks = await rag_service.hybrid_retrieve(question, db, limit=5, user_id=user_id)
     context_docs = [c.text for c in context_chunks]
     
     # Build source citations

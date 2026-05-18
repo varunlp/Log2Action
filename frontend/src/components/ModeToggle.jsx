@@ -1,4 +1,3 @@
-import React from 'react';
 import { Terminal, BookOpen } from 'lucide-react';
 
 const MODES = [

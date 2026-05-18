@@ -37,7 +37,7 @@ async def analyze_log_content(
     
     # 2. RAG Context Retrieval
     query_snippet = raw_text[:500]
-    context_chunks = await rag_service.hybrid_retrieve(query_snippet, db, limit=3)
+    context_chunks = await rag_service.hybrid_retrieve(query_snippet, db, limit=3, user_id=user_id)
     context_docs = [c.text for c in context_chunks]
     
     # Build source citations

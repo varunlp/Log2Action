@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Settings, LogOut, Plus, Trash2, BookOpen, ChevronLeft, ChevronRight, Waves } from 'lucide-react';
+import { Terminal, Settings, LogOut, Plus, Trash2, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import API_BASE from '../config';
 import toast from 'react-hot-toast';
@@ -46,14 +46,14 @@ export default function Dashboard() {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => { loadSidebarHistory(); }, []);
-
-  const loadSidebarHistory = async () => {
+  const loadSidebarHistory = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/v1/chat/history?limit=50`);
       setSidebarHistory(res.data);
     } catch (err) { console.error("Failed to load history", err); }
-  };
+  }, []);
+
+  useEffect(() => { loadSidebarHistory(); }, [loadSidebarHistory]);
 
   const newConversation = () => { setMessages([]); setActiveHistoryId(null); };
 
@@ -110,7 +110,7 @@ export default function Dashboard() {
       await axios.delete(`${API_BASE}/api/v1/chat/history`);
       setMessages([]); setSidebarHistory([]); setActiveHistoryId(null);
       toast.success('History cleared');
-    } catch (err) { toast.error('Failed to clear history'); }
+    } catch { toast.error('Failed to clear history'); }
   };
 
   const grouped = groupByDate(sidebarHistory);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, BookOpen, Activity, Copy, Check, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';

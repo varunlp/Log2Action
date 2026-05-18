@@ -1,7 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-import { Terminal, Zap, Database, ShieldCheck, ArrowRight, Waves, BookOpen, Sparkles } from 'lucide-react';
+import { Terminal, Zap, Database, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 
 const FeatureCard = ({ icon, title, desc, delay, color }) => (
@@ -10,7 +9,7 @@ const FeatureCard = ({ icon, title, desc, delay, color }) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.5 }}
     className="card card-3d"
-    style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}
+    style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden', borderRadius: 8 }}
   >
     {/* Subtle gradient accent line at top */}
     <div style={{
@@ -18,7 +17,7 @@ const FeatureCard = ({ icon, title, desc, delay, color }) => (
       background: `linear-gradient(90deg, ${color}, transparent)`
     }} />
     <div style={{
-      width: 40, height: 40, borderRadius: '12px', marginBottom: '1rem',
+      width: 40, height: 40, borderRadius: 8, marginBottom: '1rem',
       background: `${color}12`, border: `1px solid ${color}25`,
       display: 'flex', alignItems: 'center', justifyContent: 'center', color
     }}>
@@ -33,21 +32,16 @@ export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-
-      {/* Ambient floating orbs */}
-      <div className="ambient-orb" style={{ width: 400, height: 400, background: 'var(--accent)', top: '-10%', right: '-5%' }} />
-      <div className="ambient-orb" style={{ width: 300, height: 300, background: 'var(--accent-2)', bottom: '10%', left: '-5%' }} />
-      <div className="ambient-orb" style={{ width: 200, height: 200, background: 'var(--accent-3)', top: '50%', right: '20%' }} />
+    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: 'var(--gradient-surface)' }}>
 
       {/* ─── Navbar ─── */}
       <nav style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '1rem 2.5rem', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1
+        padding: '1rem 2.5rem', maxWidth: '1180px', margin: '0 auto', position: 'relative', zIndex: 1
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{
-            width: 32, height: 32, borderRadius: '10px',
+            width: 32, height: 32, borderRadius: 8,
             background: 'var(--gradient-brand)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
@@ -65,49 +59,72 @@ export default function Landing() {
       </nav>
 
       {/* ─── Hero ─── */}
-      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '5rem 2rem 3rem', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      <main style={{ maxWidth: '1180px', margin: '0 auto', padding: '4.5rem 2rem 3rem', position: 'relative', zIndex: 1 }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
 
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            style={{ display: 'inline-flex', marginBottom: '1.75rem' }}
-          >
-            <span className="badge" style={{
-              background: 'var(--accent-subtle)',
-              border: '1px solid var(--accent-border)',
-              color: 'var(--accent)',
-              padding: '0.35rem 0.85rem', fontSize: '0.78rem'
-            }}>
-              <Sparkles size={13} /> Powered by AI + pgvector RAG
-            </span>
-          </motion.div>
+          <div className="landing-hero-grid">
+            <div>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                style={{ display: 'inline-flex', marginBottom: '1.75rem' }}
+              >
+                <span className="badge" style={{
+                  background: 'var(--accent-subtle)',
+                  border: '1px solid var(--accent-border)',
+                  color: 'var(--accent)',
+                  padding: '0.35rem 0.85rem', fontSize: '0.78rem'
+                }}>
+                  <Sparkles size={13} /> AI log analysis with runbook retrieval
+                </span>
+              </motion.div>
 
-          <h1 style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-2px', marginBottom: '1.5rem', lineHeight: 1.05 }}>
-            From raw logs to<br />
-            <span className="accent-text">root cause in seconds.</span>
-          </h1>
+              <h1 style={{ fontSize: '3.5rem', fontWeight: 800, marginBottom: '1.5rem', lineHeight: 1.05, maxWidth: 660 }}>
+                LOG2ACTION
+              </h1>
 
-          <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '520px', margin: '0 auto 2.5rem', lineHeight: 1.7 }}>
-            Upload logs or ask questions. The AI queries your internal runbooks, traces the stack, and delivers the exact fix. No more guessing.
-          </p>
+              <p style={{ fontSize: '1.08rem', color: 'var(--text-secondary)', maxWidth: '560px', marginBottom: '2rem', lineHeight: 1.7 }}>
+                Turn uploaded logs, stack traces, runbooks, and SOPs into structured incident analysis with source-backed recommendations for operations teams.
+              </p>
 
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/register')} className="btn-primary" style={{ padding: '0.8rem 2rem', fontSize: '0.95rem' }}>
-              Start analyzing <ArrowRight size={16} />
-            </button>
-            <button onClick={() => navigate('/login')} className="btn-secondary" style={{ padding: '0.8rem 2rem', fontSize: '0.95rem' }}>
-              Sign in
-            </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button onClick={() => navigate('/register')} className="btn-primary" style={{ padding: '0.8rem 1.5rem', fontSize: '0.95rem', borderRadius: 8 }}>
+                  Start analyzing <ArrowRight size={16} />
+                </button>
+                <button onClick={() => navigate('/login')} className="btn-secondary" style={{ padding: '0.8rem 1.5rem', fontSize: '0.95rem', borderRadius: 8 }}>
+                  Sign in
+                </button>
+              </div>
+            </div>
+
+            <div className="card" style={{ borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Terminal size={15} color="var(--accent)" />
+                <span style={{ fontSize: '0.82rem', fontWeight: 700 }}>Incident analysis</span>
+              </div>
+              <div style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
+                {[
+                  ['Severity', 'CRITICAL', 'var(--error)'],
+                  ['Signal', 'Database connection pool exhausted', 'var(--text-primary)'],
+                  ['Likely cause', 'Connection leak after deploy v42', 'var(--text-primary)'],
+                  ['Runbook match', 'Pool recovery SOP, section 3', 'var(--accent)'],
+                ].map(([label, value, color]) => (
+                  <div key={label} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.75rem', fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--text-tertiary)' }}>{label}</span>
+                    <span style={{ color, fontWeight: 600 }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
 
         {/* ─── Feature Cards ─── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '5rem', textAlign: 'left' }}>
-          <FeatureCard icon={<Zap size={20} />} title="Instant diagnosis" desc="AI traces through your logs and pinpoints the exact failure in seconds." delay={0.3} color="#0ea5e9" />
-          <FeatureCard icon={<Database size={20} />} title="RAG knowledge base" desc="Embed runbooks & SOPs into pgvector. AI retrieves context automatically." delay={0.4} color="#8b5cf6" />
-          <FeatureCard icon={<ShieldCheck size={20} />} title="Enterprise security" desc="Role-based auth with admin approval. Production-grade from day one." delay={0.5} color="#10b981" />
+          <FeatureCard icon={<Zap size={20} />} title="Structured diagnosis" desc="Convert noisy logs into severity, root cause, and remediation fields." delay={0.3} color="#0ea5e9" />
+          <FeatureCard icon={<Database size={20} />} title="Knowledge retrieval" desc="Search uploaded runbooks and SOPs with pgvector-backed context." delay={0.4} color="#8b5cf6" />
+          <FeatureCard icon={<ShieldCheck size={20} />} title="Controlled access" desc="Use approved accounts, admin review, scoped user data, and explicit cloud origins." delay={0.5} color="#10b981" />
         </div>
       </main>
 

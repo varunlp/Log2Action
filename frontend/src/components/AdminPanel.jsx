@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, Database, UploadCloud, CheckCircle, Loader2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Lock, Unlock, Database, UploadCloud, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import API_BASE from '../config';
 

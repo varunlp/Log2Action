@@ -2,7 +2,7 @@
 RAG Service — Ingestion + Hybrid Retrieval (Vector + Keyword) with source citations.
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional
 from dataclasses import dataclass
@@ -18,6 +18,12 @@ class RetrievedChunk:
     document_name: str
     chunk_id: int
     score: float = 0.0
+
+
+def _scope_chunks(stmt, user_id: Optional[int]):
+    if user_id is None:
+        return stmt
+    return stmt.where(or_(DocumentChunk.user_id == user_id, DocumentChunk.user_id.is_(None)))
 
 
 class RAGService:
@@ -67,19 +73,26 @@ class RAGService:
         
         return len(chunks)
 
-    async def retrieve_relevant_docs(self, query: str, db: Session, limit: int = 3) -> List[str]:
+    async def retrieve_relevant_docs(
+        self,
+        query: str,
+        db: Session,
+        limit: int = 3,
+        user_id: Optional[int] = None
+    ) -> List[str]:
         """
         Legacy method — returns raw text strings for backward compatibility
         with the existing log analysis pipeline.
         """
-        chunks = await self.hybrid_retrieve(query, db, limit=limit)
+        chunks = await self.hybrid_retrieve(query, db, limit=limit, user_id=user_id)
         return [c.text for c in chunks]
 
     async def hybrid_retrieve(
         self,
         query: str,
         db: Session,
-        limit: int = 5
+        limit: int = 5,
+        user_id: Optional[int] = None
     ) -> List[RetrievedChunk]:
         """
         Hybrid retrieval combining:
@@ -96,7 +109,7 @@ class RAGService:
             query_embeddings = await ai_provider.generate_embeddings([query[:500]])
             query_vector = query_embeddings[0]
             
-            vector_stmt = select(DocumentChunk).order_by(
+            vector_stmt = _scope_chunks(select(DocumentChunk), user_id).order_by(
                 DocumentChunk.embedding.cosine_distance(query_vector)
             ).limit(limit)
             
@@ -120,7 +133,7 @@ class RAGService:
             
             if keywords:
                 for kw in keywords[:3]:  # Limit to top 3 keywords
-                    kw_stmt = select(DocumentChunk).filter(
+                    kw_stmt = _scope_chunks(select(DocumentChunk), user_id).filter(
                         DocumentChunk.chunk_text.ilike(f"%{kw}%")
                     ).limit(limit)
                     

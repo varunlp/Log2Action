@@ -2,10 +2,11 @@ services:
   db:
     image: pgvector/pgvector:pg15
     container_name: log2action_db
+    env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-log2action_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secretpassword}
       POSTGRES_DB: ${POSTGRES_DB:-log2action_db}
+      # Removed hardcoded password fallback
     ports:
       - "5432:5432"
     volumes:
@@ -23,20 +24,10 @@ services:
     container_name: log2action_api
     ports:
       - "8000:8000"
+    env_file: .env
     environment:
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - PORT=8000
-      - POSTGRES_USER=${POSTGRES_USER:-log2action_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secretpassword}
-      - POSTGRES_DB=${POSTGRES_DB:-log2action_db}
       - POSTGRES_SERVER=db
-      - AI_PROVIDER=${AI_PROVIDER:-mock}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-super_secret_log2action_jwt_key_change_in_prod}
-      - CORS_ORIGINS=${CORS_ORIGINS:-*}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
-      - BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:-admin@log2action.com}
-      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:-admin123}
+      - PORT=8000
     depends_on:
       db:
         condition: service_healthy

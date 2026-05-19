@@ -2,6 +2,15 @@
 
 Docker Compose runs the full app: PostgreSQL with pgvector, FastAPI, and the Vite frontend served by nginx.
 
+## Initial Setup & Configuration
+
+This project strictly relies on environment variables for security. You **must** create an `.env` file before running the application.
+
+```bash
+cp .env.example .env
+```
+Edit `.env` to configure your environment, database secrets, and AI provider.
+
 ## Cloud Shell Clean Run
 
 Use this when the browser or Docker cache looks stale, or login keeps failing because an old Postgres volume still has old users.
@@ -9,25 +18,18 @@ Use this when the browser or Docker cache looks stale, or login keeps failing be
 ```bash
 docker compose down --volumes --remove-orphans
 docker compose build --no-cache
-VITE_API_URL= docker compose up -d
+docker compose up -d
 docker compose ps
 ```
 
 Open the Cloud Shell web preview for port `8080`.
 
-Development login:
-
-```text
-Email: admin@log2action.local
-Password: AdminPass1234
-```
-
-The development admin is created or repaired on startup while `ENVIRONMENT` is not `production` and `ENABLE_DEV_ADMIN=true`.
+**Development login:**
+If `ENVIRONMENT=development` and `ENABLE_DEV_ADMIN=true` in your `.env` file, the development admin is automatically created using the `DEV_ADMIN_EMAIL` and `DEV_ADMIN_PASSWORD` credentials defined there. Check your `.env` file for these default credentials.
 
 ## Local Run
 
 ```bash
-cp .env.example .env
 docker compose up --build
 ```
 
@@ -37,4 +39,8 @@ API health: `http://localhost:8000/health`
 
 ## Production Notes
 
-Before production, set `ENVIRONMENT=production`, use a strong `JWT_SECRET_KEY`, configure explicit `CORS_ORIGINS` and `ALLOWED_HOSTS`, use a strong database password or managed `DATABASE_URL`, and create the first admin with `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`.
+Before deploying to production (e.g. AWS EC2, cloud services), update your `.env` file:
+1. Set `ENVIRONMENT=production`.
+2. Generate and set a strong `JWT_SECRET_KEY` and `POSTGRES_PASSWORD`.
+3. Configure explicit `CORS_ORIGINS` and `ALLOWED_HOSTS`.
+4. Define `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to create your initial admin account, and remove them after the first deployment.

@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     PORT: int = 8000
     
-    # Database
+    # Database (No default for POSTGRES_PASSWORD to enforce setting it)
     POSTGRES_USER: str = "log2action_user"
-    POSTGRES_PASSWORD: str = "secretpassword"
+    POSTGRES_PASSWORD: str
     POSTGRES_DB: str = "log2action_db"
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: str = "5432"
@@ -29,17 +29,21 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str | None = None
 
     # Security
-    JWT_SECRET_KEY: str = "super_secret_log2action_jwt_key_change_in_prod"
+    JWT_SECRET_KEY: str
     CORS_ORIGINS: str = "*"
     ALLOWED_HOSTS: str = "*"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024
+    
+    # Admin bootstrapping
     BOOTSTRAP_ADMIN_EMAIL: str | None = None
     BOOTSTRAP_ADMIN_PASSWORD: str | None = None
-    ENABLE_DEV_ADMIN: bool = True
-    DEV_ADMIN_EMAIL: str = "admin@log2action.com"
-    DEV_ADMIN_PASSWORD: str = "admin123"
-    FIRST_USER_AUTO_ADMIN: bool = True
+    
+    # Development only config
+    ENABLE_DEV_ADMIN: bool = False
+    DEV_ADMIN_EMAIL: str | None = None
+    DEV_ADMIN_PASSWORD: str | None = None
+    FIRST_USER_AUTO_ADMIN: bool = False
 
     @field_validator("ENVIRONMENT")
     @classmethod

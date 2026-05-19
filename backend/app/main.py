@@ -24,7 +24,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Run startup tasks before the app accepts requests."""
-    admin_email, admin_password = settings.bootstrap_admin_credentials
+    admin_email, admin_password = settings.initial_admin_credentials
     if admin_email and admin_password:
         from app.db.session import SessionLocal
         from app.models.domain import User

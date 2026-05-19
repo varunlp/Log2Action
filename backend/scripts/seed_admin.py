@@ -12,9 +12,9 @@ from app.core.config import settings
 def seed_admin():
     db = SessionLocal()
     try:
-        admin_email, admin_password = settings.bootstrap_admin_credentials
+        admin_email, admin_password = settings.initial_admin_credentials
         if not admin_email or not admin_password:
-            print("No bootstrap admin credentials configured.")
+            print("No initial admin credentials configured.")
             return
         
         user = db.query(User).filter(User.email == admin_email).first()

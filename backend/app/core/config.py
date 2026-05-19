@@ -35,15 +35,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024
     
-    # Admin bootstrapping
-    BOOTSTRAP_ADMIN_EMAIL: str | None = None
-    BOOTSTRAP_ADMIN_PASSWORD: str | None = None
-    
-    # Development only config
-    ENABLE_DEV_ADMIN: bool = False
-    DEV_ADMIN_EMAIL: str | None = None
-    DEV_ADMIN_PASSWORD: str | None = None
-    FIRST_USER_AUTO_ADMIN: bool = False
+    # Initial Admin Account setup
+    INITIAL_ADMIN_EMAIL: str | None = None
+    INITIAL_ADMIN_PASSWORD: str | None = None
 
     @field_validator("ENVIRONMENT")
     @classmethod
@@ -63,14 +57,8 @@ class Settings(BaseSettings):
         return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
 
     @property
-    def bootstrap_admin_credentials(self) -> tuple[str | None, str | None]:
-        if self.BOOTSTRAP_ADMIN_EMAIL and self.BOOTSTRAP_ADMIN_PASSWORD:
-            return self.BOOTSTRAP_ADMIN_EMAIL, self.BOOTSTRAP_ADMIN_PASSWORD
-
-        if not self.is_production and self.ENABLE_DEV_ADMIN:
-            return self.DEV_ADMIN_EMAIL, self.DEV_ADMIN_PASSWORD
-
-        return None, None
+    def initial_admin_credentials(self) -> tuple[str | None, str | None]:
+        return self.INITIAL_ADMIN_EMAIL, self.INITIAL_ADMIN_PASSWORD
 
     def validate_runtime_safety(self) -> None:
         if not self.is_production:

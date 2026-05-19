@@ -22,18 +22,11 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
             detail="The user with this email already exists in the system.",
         )
     
-    # Developer convenience only. Production admin creation should use bootstrap env vars.
-    is_first_user = (
-        settings.FIRST_USER_AUTO_ADMIN
-        and not settings.is_production
-        and db.query(User).count() == 0
-    )
-    
     user = User(
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
-        is_admin=is_first_user,
-        is_approved=is_first_user,
+        is_admin=False,
+        is_approved=False,
     )
     db.add(user)
     db.commit()

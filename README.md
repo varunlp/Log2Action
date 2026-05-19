@@ -25,7 +25,7 @@ docker compose ps
 Open the Cloud Shell web preview for port `8080`.
 
 **Development login:**
-If `ENVIRONMENT=development` and `ENABLE_DEV_ADMIN=true` in your `.env` file, the development admin is automatically created using the `DEV_ADMIN_EMAIL` and `DEV_ADMIN_PASSWORD` credentials defined there. Check your `.env` file for these default credentials.
+If you set `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` in your `.env` file, that admin account will be automatically created on startup. Use those credentials to log in.
 
 ## Local Run
 
@@ -43,4 +43,4 @@ Before deploying to production (e.g. AWS EC2, cloud services), update your `.env
 1. Set `ENVIRONMENT=production`.
 2. Generate and set a strong `JWT_SECRET_KEY` and `POSTGRES_PASSWORD`.
 3. Configure explicit `CORS_ORIGINS` and `ALLOWED_HOSTS`.
-4. Define `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to create your initial admin account, and remove them after the first deployment.
+4. Define `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` to create your initial admin account. You can comment them out or remove them after the first deployment.

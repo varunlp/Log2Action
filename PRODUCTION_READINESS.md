@@ -24,9 +24,9 @@ This app is closer to deployable after the hardening pass in this branch, but pr
 
 ## Multi-User Data Isolation
 
-- Chat history and log history are scoped to the authenticated user.
-- Uploaded documents are listed and deleted only by their owner unless the requester is an admin.
-- RAG retrieval is scoped to the current user's document chunks, plus legacy chunks without a user owner.
+- Chat history and log history are strictly scoped to the authenticated user.
+- **Knowledge Base (RAG) is Global:** Documents (runbooks, SOPs) uploaded to the Knowledge Base by an Admin are globally searchable by all approved users.
+- Uploaded KB documents are listed and deleted only by Admins.
 - Admin routes remain global and require `is_admin=true`.
 
 ## Security Controls Present

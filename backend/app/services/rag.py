@@ -21,9 +21,9 @@ class RetrievedChunk:
 
 
 def _scope_chunks(stmt, user_id: Optional[int]):
-    if user_id is None:
-        return stmt
-    return stmt.where(or_(DocumentChunk.user_id == user_id, DocumentChunk.user_id.is_(None)))
+    # The Knowledge Base is a globally shared resource. 
+    # All users can query all runbooks and SOPs uploaded by the admin.
+    return stmt
 
 
 class RAGService:

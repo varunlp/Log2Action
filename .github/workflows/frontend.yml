@@ -42,6 +42,8 @@ jobs:
           tags: frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
 
       - name: Scan Docker Image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -52,6 +54,25 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "HIGH,CRITICAL"
+      - name: Run Frontend Container
+        run: |
+          docker run -d \
+            --name frontend-test \
+            -p 8080:80 \
+            frontend:${{ github.sha }}
+
+      - name: Wait for Frontend
+        run: sleep 5
+
+      - name: Smoke Test Frontend
+        run: |
+          curl --fail http://localhost:8080/frontend-health
+
+      - name: Stop Test Container
+        if: always()
+        run: |
+          docker stop frontend-test
+          docker rm frontend-test
 
       - name: Tag Image for Amazon ECR
         run: |

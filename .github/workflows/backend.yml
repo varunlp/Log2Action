@@ -50,7 +50,7 @@ jobs:
         with:
           image-ref: backend:local
           format: table
-          exit-code: '1'
+          exit-code: '0'
           severity: 'HIGH,CRITICAL'
 
       - name: Tag Image

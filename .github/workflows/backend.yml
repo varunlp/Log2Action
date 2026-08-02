@@ -1,0 +1,48 @@
+name: Build and Push Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t ${{ vars.ECR_REPOSITORY_BACKEND }}:latest \
+            ./backend
+
+      - name: Tag Docker Image
+        run: |
+          docker tag \
+          ${{ vars.ECR_REPOSITORY_BACKEND }}:latest \
+          ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
+
+      - name: Push Docker Image
+        run: |
+          docker push \
+          ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}

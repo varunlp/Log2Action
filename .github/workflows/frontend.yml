@@ -60,6 +60,14 @@ jobs:
             --name frontend-test \
             -p 8080:80 \
             frontend:${{ github.sha }}
+      - name: List Containers
+        run: docker ps -a
+
+      - name: Show Container Logs
+        run: docker logs frontend-test
+
+      - name: Validate Nginx Config
+        run: docker exec frontend-test nginx -t
 
       - name: Wait for Frontend
         run: sleep 5

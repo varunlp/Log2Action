@@ -1,4 +1,4 @@
-name: Build and Push Frontend
+name: Build, Scan and Push Frontend
 
 on:
   push:
@@ -33,11 +33,32 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and Push
+      - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}
+          load: true
+          push: false
+          tags: frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Scan Docker Image
+        uses: aquasecurity/trivy-action@v0.36
+        with:
+          image-ref: frontend:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "HIGH,CRITICAL"
+
+      - name: Tag Image for Amazon ECR
+        run: |
+          docker tag frontend:${{ github.sha }} \
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}
+
+      - name: Push Image to Amazon ECR
+        run: |
+          docker push \
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}

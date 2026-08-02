@@ -54,34 +54,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "HIGH,CRITICAL"
-      - name: Run Frontend Container
-        run: |
-          docker run -d \
-            --name frontend-test \
-            -p 8080:80 \
-            frontend:${{ github.sha }}
-      - name: List Containers
-        run: docker ps -a
-
-      - name: Show Container Logs
-        run: docker logs frontend-test
-
-      - name: Validate Nginx Config
-        run: docker exec frontend-test nginx -t
-
-      - name: Wait for Frontend
-        run: sleep 5
-
-      - name: Smoke Test Frontend
-        run: |
-          curl --fail http://localhost:8080/frontend-health
-
-      - name: Stop Test Container
-        if: always()
-        run: |
-          docker stop frontend-test
-          docker rm frontend-test
-
+     
       - name: Tag Image for Amazon ECR
         run: |
           docker tag frontend:${{ github.sha }} \

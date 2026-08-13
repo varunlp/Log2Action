@@ -1,4 +1,4 @@
-name: Build, Scan and Push Frontend
+name: Build, Scan and Deploy Frontend
 
 on:
   push:
@@ -12,14 +12,21 @@ permissions:
   id-token: write
   contents: read
 
+
+concurrency:
+  group: frontend-sanity
+  cancel-in-progress: true
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
 
     steps:
+      
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -33,6 +40,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+     
       - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
@@ -45,6 +53,7 @@ jobs:
           provenance: false
           sbom: false
 
+      
       - name: Scan Docker Image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -54,7 +63,8 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "HIGH,CRITICAL"
-     
+
+      
       - name: Tag Image for Amazon ECR
         run: |
           docker tag frontend:${{ github.sha }} \
@@ -64,3 +74,68 @@ jobs:
         run: |
           docker push \
             ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}
+
+
+      - name: Get Current ECS Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition log2action-frontend-task \
+            --query 'taskDefinition' \
+            --output json > task-definition.json
+
+      - name: Update Frontend Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY_FRONTEND }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          NEW_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+          jq --arg IMAGE "$NEW_IMAGE" \
+            '.containerDefinitions |= map(
+              if .name == "frontend"
+              then .image = $IMAGE
+              else .
+              end
+            ) |
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )' \
+            task-definition.json > new-task-definition.json
+
+     
+      - name: Register New ECS Task Definition
+        id: register-task
+        run: |
+          TASK_DEFINITION_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "TASK_DEFINITION_ARN=$TASK_DEFINITION_ARN" >> "$GITHUB_ENV"
+
+      - name: Deploy Frontend to Sanity ECS
+        run: |
+          aws ecs update-service \
+            --cluster log2action-cluster \
+            --service log2action-frontend-task-service-orkg04jb \
+            --task-definition "$TASK_DEFINITION_ARN"
+
+     
+      - name: Wait for ECS Service Stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster log2action-cluster \
+            --services log2action-frontend-task-service-orkg04jb
+
+      - name: Deployment Complete
+        run: |
+          echo "Frontend Sanity deployment completed successfully."
+          echo "Image:"
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}"

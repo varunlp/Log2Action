@@ -1,4 +1,4 @@
-name: Build and Push Backend
+name: Build, Scan and Deploy Backend
 
 on:
   push:
@@ -12,11 +12,17 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: backend-sanity
+  cancel-in-progress: true
+
 jobs:
   backend:
     runs-on: ubuntu-latest
 
     steps:
+
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -39,7 +45,7 @@ jobs:
           context: ./backend
           push: false
           load: true
-          tags: backend:local
+          tags: backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
@@ -48,17 +54,97 @@ jobs:
       - name: Scan Docker Image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: backend:local
+          image-ref: backend:${{ github.sha }}
           format: table
-          exit-code: '0'
-          severity: 'HIGH,CRITICAL'
+          exit-code: "0"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "HIGH,CRITICAL"
 
-      - name: Tag Image
+      - name: Tag Image for Amazon ECR
         run: |
-          docker tag backend:local \
-          ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
+          docker tag backend:${{ github.sha }} \
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
 
-      - name: Push Image
+      - name: Push Image to Amazon ECR
         run: |
           docker push \
-          ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}
+
+
+      - name: Get Current ECS Task Definition
+        run: |
+          TASK_DEFINITION_ARN=$(aws ecs describe-services \
+            --cluster log2action-cluster \
+            --services log2action-backend-service-heqyzvyd \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          echo "Current task definition:"
+          echo "$TASK_DEFINITION_ARN"
+
+          aws ecs describe-task-definition \
+            --task-definition "$TASK_DEFINITION_ARN" \
+            --query 'taskDefinition' \
+            --output json > task-definition.json
+
+      - name: Update Backend Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY_BACKEND }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          NEW_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+          echo "New backend image:"
+          echo "$NEW_IMAGE"
+
+          jq --arg IMAGE "$NEW_IMAGE" \
+            '.containerDefinitions |= map(
+              if .name == "backend"
+              then .image = $IMAGE
+              else .
+              end
+            ) |
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )' \
+            task-definition.json > new-task-definition.json
+
+      - name: Register New ECS Task Definition
+        id: register-task
+        run: |
+          TASK_DEFINITION_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "New task definition:"
+          echo "$TASK_DEFINITION_ARN"
+
+          echo "TASK_DEFINITION_ARN=$TASK_DEFINITION_ARN" >> "$GITHUB_ENV"
+
+      - name: Deploy Backend to Sanity ECS
+        run: |
+          aws ecs update-service \
+            --cluster log2action-cluster \
+            --service log2action-backend-service-heqyzvyd \
+            --task-definition "$TASK_DEFINITION_ARN"
+
+      - name: Wait for ECS Service Stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster log2action-cluster \
+            --services log2action-backend-service-heqyzvyd
+
+      - name: Deployment Complete
+        run: |
+          echo "Backend Sanity deployment completed successfully."
+          echo "Image:"
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}"
